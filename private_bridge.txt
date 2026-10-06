@@ -1,0 +1,77 @@
+Zcash Private Receive Bridge
+Zcash Private Receive Bridge is an open-source local service that lets supported Zcash wallets synchronize received payments without sending their selected transaction or transparent-address lookups to a remote lightwallet server.
+The bridge downloads complete public block intervals and their full transactions, verifies transaction IDs, and stores the results in a durable local database. Wallets connect through their existing custom-server setting. Requests for transactions, compact blocks and supported transparent history are answered locally. Missing or invalid data causes an explicit error—never a selective upstream fallback.
+The bridge does not hold funds, accept wallet keys or replace the wallet’s scanning logic. Its initial scope is confirmed-payment synchronization and restoration. It does not promise IP anonymity, private transaction broadcasting or independent consensus validation.
+
+MVP build plan
+1. Create the standalone daemon
+Use Rust, the existing CompactTxStreamer gRPC interface and SQLite.
+Bind to localhost only.
+Add configuration for network, provider, coverage start, storage limit and acquisition concurrency.
+Provide start, stop and status commands.
+Never accept seeds, spending keys or viewing keys.
+Deliverable: a running local endpoint that a supported unchanged wallet can connect to.
+
+2. Implement complete acquisition and verification
+Acquire fixed public block intervals through a bridge-owned scheduler.
+Discover the complete transaction set using individual-block responses; do not assume an ordinary compact range contains every transaction.
+Download every referenced full transaction.
+Recompute transaction IDs using released Zcash libraries and compare them with the requested IDs.
+Check network, height consistency and block adjacency.
+Publish an interval only after every required record passes validation.
+Wallet-selected requests and cancellations must not determine which transactions the bridge fetches upstream.
+Deliverable: complete, verified intervals committed atomically to disk.
+
+3. Implement durable storage and local queries
+Store:
+Compact blocks and full transactions.
+Required tree-state and subtree metadata.
+Transparent outputs, spends and address-history mappings.
+Coverage boundaries and committed checkpoints.
+For transparent indexing, explicitly document supported scripts and resolve earlier outputs needed for spend accounting. Incomplete history must return an error—not an empty history or zero balance.
+Deliverable: restartable storage that serves supported queries without contacting upstream.
+
+4. Enforce a strict RPC policy
+Serve supported transaction, block and transparent queries locally.
+Acquire tree/subtree metadata through the documented public acquisition policy.
+Reject unknown methods and unsupported requests.
+Never forward a selected cache miss.
+Deny broadcasts in the MVP.
+Keep the first profile confirmed-only, with mempool disabled through a tested wallet configuration.
+If a wallet cannot operate safely in that profile, mark it unsupported. Do not present a fabricated empty mempool as a complete live service.
+Deliverable: a documented policy covering every RPC exposed by the daemon.
+
+5. Connect unchanged clients
+Start with the released Ledger utility package and one desktop-wallet backend. Then consolidate the Zingo and Zkool paths into the same daemon.
+For each supported client:
+Pin the exact release.
+Compare direct-server and bridge synchronization.
+Verify balances, transactions, notes, memos and persisted synchronization state.
+Restart the daemon and repeat using committed local data.
+Deliverable: reproducible client compatibility tests—not just successful gRPC calls.
+
+6. Package the proof
+Include:
+One-command build and test instructions.
+Public/testnet fixtures and sanitized request traces.
+Automated correctness and failure tests.
+A short installation/configuration guide.
+Threat model, RPC policy, compatibility matrix and limitations.
+Status output showing committed coverage and acquisition failures.
+Default logs must not expose wallet addresses, keys or selected transaction IDs.
+
+Remaining checks
+Receipt coverage: demonstrate Sapling, Orchard, Ironwood and transparent receipts, plus a transparent spend involving previously indexed history.
+
+Privacy traces: compare wallets with different received transactions under identical configured coverage. Confirm no selected transaction/address request reaches upstream, including after cancellation, restart or eviction.
+
+Failure behavior: test substituted transactions, missing records, interrupted acquisition, reorgs, competing writers and storage-write failures. Preserve the last complete snapshot and report incomplete synchronization clearly.
+
+Actual wallet usability: demonstrate endpoint configuration in the released GUIs for any claimed GUI support. Check that wallets do not silently bypass the bridge or display incomplete synchronization as successful.
+
+Operating costs: measure recent-heavy and historical restoration intervals across at least two providers. Record bytes, RPC counts, acquisition time, disk, peak memory, retries and repeat-sync savings.
+
+Independent reproducibility: have someone outside the implementation team install it and reproduce the results from the instructions.
+
+First developer priority: consolidate the existing proofs into one durable daemon. Do not start with a dashboard, new wallet, PIR implementation or broadcast routing.
+
