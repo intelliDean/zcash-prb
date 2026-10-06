@@ -115,15 +115,34 @@ cargo run --bin zcash-private-bridge -- status --config config/bridge.toml
 Example output:
 ```
 === Zcash Private Receive Bridge Status ===
-Storage Database:    "data/bridge.db"
-Network:             mainnet
-Upstream Provider:   https://mainnet.lightwalletd.com:9067
-Local Bind Address:  127.0.0.1:9067
-Coverage Start:      3000000
-Committed Height:    3000500
-Latest Block Hash:   0000000001a4...
-Last Updated:        2026-10-06 02:30:00
+Storage Database:     "data/bridge.db"
+Network:              mainnet
+Upstream Provider:    https://mainnet.lightwalletd.com:9067
+Local Bind Address:   127.0.0.1:9067
+Coverage Start:       3000000
+Committed Height:     3000500
+Latest Block Hash:    0000000001a4...
+Last Updated:         2026-10-06 02:30:00
+Acquisition Failures: 0
 ```
+
+### Stop Bridge
+```bash
+cargo run --bin zcash-private-bridge -- stop --config config/bridge.toml
+```
+
+### Operating Cost Benchmark
+Benchmark network ingress, RPC call counts, and sync times:
+```bash
+cargo run --bin zcash-private-bridge -- benchmark --blocks 10
+```
+
+---
+
+## 5. Security & Verification Documentation
+
+* **[Threat Model & Invariants](docs/THREAT_MODEL.md):** Formal security model, zero-leakage proof, adversary assumptions, and non-goals.
+* **[Client Compatibility Matrix](docs/COMPATIBILITY.md):** Pinned client versions (Zkool, Zingo, Ledger) and parity testing protocol.
 
 ---
 
