@@ -13,7 +13,9 @@ CREATE TABLE IF NOT EXISTS coverage_metadata (
     coverage_start_height INTEGER NOT NULL,
     committed_height INTEGER NOT NULL,
     latest_block_hash BLOB NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    acquisition_failures_count INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT NULL
 );
 
 -- 2. Compact Blocks
@@ -83,5 +85,17 @@ CREATE TABLE IF NOT EXISTS subtree_roots (
 "#;
 
 pub fn apply_migrations(conn: &mut Connection) -> Result<(), rusqlite::Error> {
-    conn.execute_batch(SCHEMA_SQL)
+    conn.execute_batch(SCHEMA_SQL)?;
+
+    // Backward-compatible schema evolution for existing databases
+    let _ = conn.execute(
+        "ALTER TABLE coverage_metadata ADD COLUMN acquisition_failures_count INTEGER NOT NULL DEFAULT 0",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE coverage_metadata ADD COLUMN last_error TEXT NULL",
+        [],
+    );
+
+    Ok(())
 }

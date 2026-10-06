@@ -186,4 +186,6 @@ pub struct CoverageMetadata {
     pub committed_height: BlockHeight,
     pub latest_block_hash: BlockHash,
     pub updated_at: String,
+    pub acquisition_failures_count: u64,
+    pub last_error: Option<String>,
 }

@@ -229,6 +229,7 @@ dependencies = [
  "bridge-storage",
  "bridge-verifier",
  "clap",
+ "prost",
  "tokio",
  "toml",
  "tracing",
@@ -242,6 +243,7 @@ dependencies = [
  "chrono",
  "hex",
  "serde",
+ "sha2",
  "thiserror",
  "toml",
 ]

@@ -395,6 +395,8 @@ impl CompactTxStreamer for BridgeGrpcService {
                 committed_height: BlockHeight(0),
                 latest_block_hash: bridge_core::BlockHash([0; 32]),
                 updated_at: String::new(),
+                acquisition_failures_count: 0,
+                last_error: None,
             });
 
         Ok(Response::new(LightdInfo {

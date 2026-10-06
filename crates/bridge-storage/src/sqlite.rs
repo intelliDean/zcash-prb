@@ -51,7 +51,8 @@ impl StorageBackend for SqliteStorage {
             let conn = conn.lock().unwrap();
             let mut stmt = conn
                 .prepare(
-                    "SELECT network, coverage_start_height, committed_height, latest_block_hash, updated_at 
+                    "SELECT network, coverage_start_height, committed_height, latest_block_hash, updated_at, 
+                            acquisition_failures_count, last_error
                      FROM coverage_metadata WHERE id = 1",
                 )
                 .map_err(|e| BridgeError::Storage(e.to_string()))?;
@@ -63,6 +64,8 @@ impl StorageBackend for SqliteStorage {
                     let committed_h: u32 = row.get(2)?;
                     let hash_bytes: Vec<u8> = row.get(3)?;
                     let updated_at: String = row.get(4)?;
+                    let failures_count: u64 = row.get(5)?;
+                    let last_error: Option<String> = row.get(6)?;
 
                     let mut hash_arr = [0u8; 32];
                     if hash_bytes.len() == 32 {
@@ -81,6 +84,8 @@ impl StorageBackend for SqliteStorage {
                         committed_height: BlockHeight(committed_h),
                         latest_block_hash: BlockHash(hash_arr),
                         updated_at,
+                        acquisition_failures_count: failures_count,
+                        last_error,
                     })
                 })
                 .optional()
@@ -637,6 +642,26 @@ impl StorageBackend for SqliteStorage {
             tx.commit()
                 .map_err(|e| BridgeError::Storage(format!("Failed to commit reorg rollback: {e}")))?;
 
+            Ok(())
+        })
+        .await
+        .map_err(|e| BridgeError::Storage(format!("Join error: {e}")))?
+    }
+
+    async fn record_acquisition_failure(&self, error_msg: &str) -> Result<(), BridgeError> {
+        let conn = self.conn.clone();
+        let err_str = error_msg.to_string();
+        tokio::task::spawn_blocking(move || {
+            let conn = conn.lock().unwrap();
+            conn.execute(
+                "UPDATE coverage_metadata 
+                 SET acquisition_failures_count = acquisition_failures_count + 1, 
+                     last_error = ?1, 
+                     updated_at = CURRENT_TIMESTAMP 
+                 WHERE id = 1",
+                params![err_str],
+            )
+            .map_err(|e| BridgeError::Storage(e.to_string()))?;
             Ok(())
         })
         .await

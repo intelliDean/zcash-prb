@@ -79,6 +79,7 @@ impl AcquisitionWorker {
                 }
                 Err(e) => {
                     error!("Error during sync step: {e}. Retrying in 5s...");
+                    let _ = self.storage.record_acquisition_failure(&e.to_string()).await;
                     tokio::select! {
                         _ = tokio::time::sleep(Duration::from_secs(5)) => {},
                         _ = self.shutdown_rx.changed() => {},
@@ -163,7 +164,40 @@ impl AcquisitionWorker {
             full_transactions.push(raw_tx);
         }
 
-        // 8. Fetch tree state for interval end
+        // 8. Extract transparent inputs (spends) and outputs for local indexing
+        let mut transparent_outputs = Vec::new();
+        let mut transparent_spends = Vec::new();
+
+        for raw_tx in &full_transactions {
+            let txid = match bridge_verifier::compute_raw_txid(&raw_tx.data) {
+                Ok(id) => id,
+                Err(_) => continue,
+            };
+            let height = BlockHeight(raw_tx.height as u32);
+
+            if let Ok((inputs, outputs)) = bridge_core::parse_transparent_transaction(&raw_tx.data, self.config.network) {
+                for out in outputs {
+                    transparent_outputs.push(bridge_storage::TransparentOutputRecord {
+                        txid,
+                        vout: out.vout,
+                        address: out.address,
+                        value_zat: out.value_zat,
+                        script_pubkey: out.script_pubkey,
+                        height,
+                    });
+                }
+                for inp in inputs {
+                    transparent_spends.push(bridge_storage::TransparentSpendRecord {
+                        prev_txid: inp.prev_txid,
+                        prev_vout: inp.prev_vout,
+                        spending_txid: txid,
+                        spending_height: height,
+                    });
+                }
+            }
+        }
+
+        // 9. Fetch tree state for interval end
         let end_tree_state = self.upstream.get_tree_state(interval.end).await.unwrap_or(TreeState {
             network: self.config.network.to_string(),
             height: interval.end.0 as u64,
@@ -174,7 +208,7 @@ impl AcquisitionWorker {
             ironwood_tree: String::new(),
         });
 
-        // 9. Prepare and commit verified batch atomically
+        // 10. Prepare and commit verified batch atomically
         let end_block = blocks.last().unwrap();
         let mut end_hash_arr = [0u8; 32];
         if end_block.hash.len() == 32 {
@@ -186,8 +220,8 @@ impl AcquisitionWorker {
             transactions: full_transactions,
             tree_states: vec![end_tree_state],
             subtree_roots: vec![],
-            transparent_outputs: vec![],
-            transparent_spends: vec![],
+            transparent_outputs,
+            transparent_spends,
             end_height: interval.end,
             end_block_hash: BlockHash(end_hash_arr),
         };

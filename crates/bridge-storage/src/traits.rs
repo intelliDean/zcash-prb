@@ -50,4 +50,5 @@ pub trait StorageBackend: Send + Sync + 'static {
     ) -> Result<Vec<RawTransaction>, BridgeError>;
     async fn commit_verified_interval(&self, batch: VerifiedIntervalBatch) -> Result<(), BridgeError>;
     async fn handle_reorg(&self, fork_height: BlockHeight) -> Result<(), BridgeError>;
+    async fn record_acquisition_failure(&self, error: &str) -> Result<(), BridgeError>;
 }
