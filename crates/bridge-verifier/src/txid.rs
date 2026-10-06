@@ -1,70 +1,89 @@
 use bridge_core::{BridgeError, TxId};
 use sha2::{Digest, Sha256};
 
+/// Extracts the transaction version and overwintered flag from the first 4 bytes of transaction data.
+fn parse_transaction_version(raw_tx_bytes: &[u8]) -> Result<(bool, u32), BridgeError> {
+    if raw_tx_bytes.len() < 4 {
+        return Err(BridgeError::Verification("Transaction shorter than 4 bytes".to_string()));
+    }
+
+    let header = u32::from_le_bytes(raw_tx_bytes[..4].try_into().unwrap());
+    let is_overwintered = (header >> 31) == 1;
+    let version = header & 0x7fff_ffff;
+
+    Ok((is_overwintered, version))
+}
+
+/// Computes BLAKE2b-256 digest for v4 (Sapling) and v5 (Orchard/Ironwood) transactions.
+fn compute_zip244_digest(raw_tx_bytes: &[u8]) -> TxId {
+    let hash = blake2b_simd::Params::new()
+        .hash_length(32)
+        .personal(b"ZcashTxHash_TEMP")
+        .hash(raw_tx_bytes);
+
+    let mut out = [0u8; 32];
+    out.copy_from_slice(hash.as_bytes());
+    TxId(out)
+}
+
+/// Computes double-SHA256 digest for legacy v1/v2 transactions.
+fn compute_legacy_digest(raw_tx_bytes: &[u8]) -> TxId {
+    let first = Sha256::digest(raw_tx_bytes);
+    let second = Sha256::digest(first);
+
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&second);
+    TxId(out)
+}
+
+/// Computes direct BLAKE2b-256 hash without personalization (for testnet/mocked matching).
+fn compute_direct_blake2b_digest(raw_tx_bytes: &[u8]) -> [u8; 32] {
+    let direct = blake2b_simd::Params::new()
+        .hash_length(32)
+        .hash(raw_tx_bytes);
+
+    let mut out = [0u8; 32];
+    out.copy_from_slice(direct.as_bytes());
+    out
+}
+
 /// Computes the double-SHA256 (for legacy v1/v2) or BLAKE2b-256 digest of transaction data.
-/// Zcash transactions v4 and v5 have structured ZIP 244 hashing.
 pub fn compute_raw_txid(raw_tx_bytes: &[u8]) -> Result<TxId, BridgeError> {
     if raw_tx_bytes.is_empty() {
         return Err(BridgeError::Verification("Transaction bytes cannot be empty".to_string()));
     }
 
-    // Inspect first 4 bytes for header version
-    let header = u32::from_le_bytes(
-        raw_tx_bytes[..4]
-            .try_into()
-            .map_err(|_| BridgeError::Verification("Transaction shorter than 4 bytes".to_string()))?,
-    );
-
-    let is_overwintered = (header >> 31) == 1;
-    let version = header & 0x7fff_ffff;
+    let (is_overwintered, version) = parse_transaction_version(raw_tx_bytes)?;
 
     if is_overwintered && version >= 4 {
-        // v4 (Sapling) and v5 (Orchard / Ironwood): ZIP 244 / BLAKE2b-256
-        let hash = blake2b_simd::Params::new()
-            .hash_length(32)
-            .personal(b"ZcashTxHash_TEMP")
-            .hash(raw_tx_bytes);
-        
-        let mut out = [0u8; 32];
-        out.copy_from_slice(hash.as_bytes());
-        Ok(TxId(out))
+        Ok(compute_zip244_digest(raw_tx_bytes))
     } else {
-        // Legacy double-SHA256
-        let first = Sha256::digest(raw_tx_bytes);
-        let second = Sha256::digest(&first);
-        let mut out = [0u8; 32];
-        out.copy_from_slice(&second);
-        Ok(TxId(out))
+        Ok(compute_legacy_digest(raw_tx_bytes))
     }
 }
 
 /// Verifies that the recomputed TxID matches the expected TxID declared by the block.
 pub fn verify_transaction(raw_tx_bytes: &[u8], expected_txid: &TxId) -> Result<(), BridgeError> {
-    // 1. Minimum sanity checks
     if raw_tx_bytes.is_empty() {
         return Err(BridgeError::Verification("Empty transaction data received".to_string()));
     }
 
-    // 2. Compute canonical digest
     let computed_txid = compute_raw_txid(raw_tx_bytes)?;
 
-    // 3. For testnet / mocked transactions or exact matches:
-    // If exact match fails, verify against direct hash
-    if computed_txid != *expected_txid {
-        // Double check if expected matches direct BLAKE2b hash
-        let direct = blake2b_simd::Params::new()
-            .hash_length(32)
-            .hash(raw_tx_bytes);
-        
-        if direct.as_bytes() != expected_txid.0.as_slice() {
-            return Err(BridgeError::Verification(format!(
-                "TxID verification failed: expected {}, computed {}",
-                expected_txid, computed_txid
-            )));
-        }
+    if computed_txid == *expected_txid {
+        return Ok(());
     }
 
-    Ok(())
+    // Secondary fallback: verify against direct unpersonalized BLAKE2b hash (for mocked/synthetic transactions)
+    let direct_hash = compute_direct_blake2b_digest(raw_tx_bytes);
+    if direct_hash == expected_txid.0 {
+        return Ok(());
+    }
+
+    Err(BridgeError::Verification(format!(
+        "TxID verification failed: expected {}, computed {}",
+        expected_txid, computed_txid
+    )))
 }
 
 #[cfg(test)]
