@@ -17,10 +17,7 @@ pub struct BridgeGrpcService {
 
 impl BridgeGrpcService {
     pub fn new(storage: Arc<dyn StorageBackend>, network_name: impl Into<String>) -> Self {
-        Self {
-            storage,
-            network_name: network_name.into(),
-        }
+        Self { storage, network_name: network_name.into() }
     }
 }
 
@@ -35,7 +32,10 @@ impl CompactTxStreamer for BridgeGrpcService {
     type GetSubtreeRootsStream = blocks::ResponseStream<SubtreeRoot>;
     type GetAddressUtxosStreamStream = blocks::ResponseStream<GetAddressUtxosReply>;
 
-    async fn get_latest_block(&self, _request: Request<ChainSpec>) -> Result<Response<BlockId>, Status> {
+    async fn get_latest_block(
+        &self,
+        _request: Request<ChainSpec>,
+    ) -> Result<Response<BlockId>, Status> {
         blocks::get_latest_block(&self.storage).await
     }
 
@@ -43,7 +43,10 @@ impl CompactTxStreamer for BridgeGrpcService {
         blocks::get_block(&self.storage, request).await
     }
 
-    async fn get_block_nullifiers(&self, _request: Request<BlockId>) -> Result<Response<CompactBlock>, Status> {
+    async fn get_block_nullifiers(
+        &self,
+        _request: Request<BlockId>,
+    ) -> Result<Response<CompactBlock>, Status> {
         Err(Status::unimplemented(
             "GetBlockNullifiers is deprecated; please use GetBlockRange with poolTypes",
         ))
@@ -65,11 +68,17 @@ impl CompactTxStreamer for BridgeGrpcService {
         ))
     }
 
-    async fn get_transaction(&self, request: Request<TxFilter>) -> Result<Response<RawTransaction>, Status> {
+    async fn get_transaction(
+        &self,
+        request: Request<TxFilter>,
+    ) -> Result<Response<RawTransaction>, Status> {
         transactions::get_transaction(&self.storage, request).await
     }
 
-    async fn send_transaction(&self, request: Request<RawTransaction>) -> Result<Response<SendResponse>, Status> {
+    async fn send_transaction(
+        &self,
+        request: Request<RawTransaction>,
+    ) -> Result<Response<SendResponse>, Status> {
         transactions::send_transaction(request)
     }
 
@@ -87,7 +96,10 @@ impl CompactTxStreamer for BridgeGrpcService {
         transparent::get_taddress_transactions(&self.storage, request).await
     }
 
-    async fn get_taddress_balance(&self, request: Request<AddressList>) -> Result<Response<Balance>, Status> {
+    async fn get_taddress_balance(
+        &self,
+        request: Request<AddressList>,
+    ) -> Result<Response<Balance>, Status> {
         transparent::get_taddress_balance(&self.storage, request).await
     }
 
@@ -112,11 +124,17 @@ impl CompactTxStreamer for BridgeGrpcService {
         mempool::get_mempool_stream(request)
     }
 
-    async fn get_tree_state(&self, request: Request<BlockId>) -> Result<Response<TreeState>, Status> {
+    async fn get_tree_state(
+        &self,
+        request: Request<BlockId>,
+    ) -> Result<Response<TreeState>, Status> {
         trees::get_tree_state(&self.storage, request).await
     }
 
-    async fn get_latest_tree_state(&self, _request: Request<Empty>) -> Result<Response<TreeState>, Status> {
+    async fn get_latest_tree_state(
+        &self,
+        _request: Request<Empty>,
+    ) -> Result<Response<TreeState>, Status> {
         trees::get_latest_tree_state(&self.storage).await
     }
 
@@ -141,11 +159,17 @@ impl CompactTxStreamer for BridgeGrpcService {
         transparent::get_address_utxos_stream(&self.storage, request).await
     }
 
-    async fn get_lightd_info(&self, _request: Request<Empty>) -> Result<Response<LightdInfo>, Status> {
+    async fn get_lightd_info(
+        &self,
+        _request: Request<Empty>,
+    ) -> Result<Response<LightdInfo>, Status> {
         info::get_lightd_info(&self.storage, &self.network_name).await
     }
 
-    async fn ping(&self, request: Request<ProtoDuration>) -> Result<Response<PingResponse>, Status> {
+    async fn ping(
+        &self,
+        request: Request<ProtoDuration>,
+    ) -> Result<Response<PingResponse>, Status> {
         info::ping(request)
     }
 }

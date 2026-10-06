@@ -60,13 +60,13 @@ impl CompactTxStreamer for MockUpstreamServer {
     type GetSubtreeRootsStream = ResponseStream<SubtreeRoot>;
     type GetAddressUtxosStreamStream = ResponseStream<GetAddressUtxosReply>;
 
-    async fn get_latest_block(&self, _request: Request<ChainSpec>) -> Result<Response<BlockId>, Status> {
+    async fn get_latest_block(
+        &self,
+        _request: Request<ChainSpec>,
+    ) -> Result<Response<BlockId>, Status> {
         self.call_history.lock().unwrap().push("GetLatestBlock".to_string());
         let height = *self.latest_height.lock().unwrap();
-        Ok(Response::new(BlockId {
-            height,
-            hash: vec![1u8; 32],
-        }))
+        Ok(Response::new(BlockId { height, hash: vec![1u8; 32] }))
     }
 
     async fn get_block(&self, request: Request<BlockId>) -> Result<Response<CompactBlock>, Status> {
@@ -82,7 +82,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         Ok(Response::new(b))
     }
 
-    async fn get_block_nullifiers(&self, _request: Request<BlockId>) -> Result<Response<CompactBlock>, Status> {
+    async fn get_block_nullifiers(
+        &self,
+        _request: Request<BlockId>,
+    ) -> Result<Response<CompactBlock>, Status> {
         Err(Status::unimplemented("unimplemented"))
     }
 
@@ -120,7 +123,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         Err(Status::unimplemented("unimplemented"))
     }
 
-    async fn get_transaction(&self, request: Request<TxFilter>) -> Result<Response<RawTransaction>, Status> {
+    async fn get_transaction(
+        &self,
+        request: Request<TxFilter>,
+    ) -> Result<Response<RawTransaction>, Status> {
         let req = request.into_inner();
         let hex_hash = hex::encode(&req.hash);
         self.call_history.lock().unwrap().push(format!("GetTransaction({})", hex_hash));
@@ -134,7 +140,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         Ok(Response::new(tx))
     }
 
-    async fn send_transaction(&self, _request: Request<RawTransaction>) -> Result<Response<SendResponse>, Status> {
+    async fn send_transaction(
+        &self,
+        _request: Request<RawTransaction>,
+    ) -> Result<Response<SendResponse>, Status> {
         Err(Status::unimplemented("unimplemented"))
     }
 
@@ -156,7 +165,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         Err(Status::unimplemented("unimplemented"))
     }
 
-    async fn get_taddress_balance(&self, _request: Request<AddressList>) -> Result<Response<Balance>, Status> {
+    async fn get_taddress_balance(
+        &self,
+        _request: Request<AddressList>,
+    ) -> Result<Response<Balance>, Status> {
         Err(Status::unimplemented("unimplemented"))
     }
 
@@ -181,7 +193,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         Err(Status::unimplemented("unimplemented"))
     }
 
-    async fn get_tree_state(&self, request: Request<BlockId>) -> Result<Response<TreeState>, Status> {
+    async fn get_tree_state(
+        &self,
+        request: Request<BlockId>,
+    ) -> Result<Response<TreeState>, Status> {
         let req = request.into_inner();
         self.call_history.lock().unwrap().push(format!("GetTreeState({})", req.height));
         Ok(Response::new(TreeState {
@@ -195,7 +210,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         }))
     }
 
-    async fn get_latest_tree_state(&self, _request: Request<Empty>) -> Result<Response<TreeState>, Status> {
+    async fn get_latest_tree_state(
+        &self,
+        _request: Request<Empty>,
+    ) -> Result<Response<TreeState>, Status> {
         Ok(Response::new(TreeState::default()))
     }
 
@@ -226,7 +244,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         Ok(Response::new(Box::pin(ReceiverStream::new(rx))))
     }
 
-    async fn get_lightd_info(&self, _request: Request<Empty>) -> Result<Response<LightdInfo>, Status> {
+    async fn get_lightd_info(
+        &self,
+        _request: Request<Empty>,
+    ) -> Result<Response<LightdInfo>, Status> {
         Ok(Response::new(LightdInfo {
             version: "0.1.0".to_string(),
             vendor: "mock-upstream".to_string(),
@@ -234,7 +255,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         }))
     }
 
-    async fn ping(&self, _request: Request<ProtoDuration>) -> Result<Response<PingResponse>, Status> {
+    async fn ping(
+        &self,
+        _request: Request<ProtoDuration>,
+    ) -> Result<Response<PingResponse>, Status> {
         Ok(Response::new(PingResponse::default()))
     }
 }

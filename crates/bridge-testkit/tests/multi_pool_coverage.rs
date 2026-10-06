@@ -12,16 +12,11 @@ use std::sync::Arc;
 #[tokio::test]
 async fn test_multi_pool_receipt_coverage() {
     let storage = Arc::new(SqliteStorage::in_memory().unwrap());
-    storage
-        .init_coverage(Network::Mainnet, BlockHeight(1000))
-        .await
-        .unwrap();
+    storage.init_coverage(Network::Mainnet, BlockHeight(1000)).await.unwrap();
 
     let tx_data = vec![0x04, 0x00, 0x00, 0x80, 0x01, 0x02];
-    let tx_hash = blake2b_simd::Params::new()
-        .hash_length(32)
-        .personal(b"ZcashTxHash_TEMP")
-        .hash(&tx_data);
+    let tx_hash =
+        blake2b_simd::Params::new().hash_length(32).personal(b"ZcashTxHash_TEMP").hash(&tx_data);
     let mut txid_arr = [0u8; 32];
     txid_arr.copy_from_slice(tx_hash.as_bytes());
     let txid = TxId(txid_arr);
@@ -37,9 +32,7 @@ async fn test_multi_pool_receipt_coverage() {
             index: 0,
             txid: txid_arr.to_vec(),
             fee: 10000,
-            spends: vec![CompactSaplingSpend {
-                nf: vec![0x01; 32],
-            }],
+            spends: vec![CompactSaplingSpend { nf: vec![0x01; 32] }],
             outputs: vec![CompactSaplingOutput {
                 cmu: vec![0x02; 32],
                 ephemeral_key: vec![0x03; 32],
@@ -71,10 +64,7 @@ async fn test_multi_pool_receipt_coverage() {
 
     let batch = VerifiedIntervalBatch {
         blocks: vec![block.clone()],
-        transactions: vec![RawTransaction {
-            data: tx_data,
-            height: 1000,
-        }],
+        transactions: vec![RawTransaction { data: tx_data, height: 1000 }],
         tree_states: vec![create_test_tree_state(1000, &hex::encode(vec![0xaa; 32]))],
         subtree_roots: vec![],
         transparent_outputs: vec![TransparentOutputRecord {

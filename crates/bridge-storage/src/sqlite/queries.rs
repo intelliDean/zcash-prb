@@ -3,7 +3,9 @@ use bridge_proto::{CompactBlock, RawTransaction, SubtreeRoot, TreeState};
 use prost::Message;
 use rusqlite::{params, Connection, OptionalExtension};
 
-pub fn query_latest_block(conn: &Connection) -> Result<Option<(BlockHeight, BlockHash)>, BridgeError> {
+pub fn query_latest_block(
+    conn: &Connection,
+) -> Result<Option<(BlockHeight, BlockHash)>, BridgeError> {
     let mut stmt = conn
         .prepare("SELECT height, block_hash FROM compact_blocks ORDER BY height DESC LIMIT 1")
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
@@ -85,10 +87,7 @@ pub fn query_full_transaction(
         .query_row(params![txid_bytes], |row| {
             let raw_data: Vec<u8> = row.get(0)?;
             let height: u32 = row.get(1)?;
-            Ok(RawTransaction {
-                data: raw_data,
-                height: height as u64,
-            })
+            Ok(RawTransaction { data: raw_data, height: height as u64 })
         })
         .optional()
         .map_err(|e| BridgeError::Storage(e.to_string()))?;

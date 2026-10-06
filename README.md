@@ -1,5 +1,8 @@
 # Zcash Private Receive Bridge
 
+[![CI](https://github.com/intelliDean/zcash-prb/actions/workflows/ci.yml/badge.svg)](https://github.com/intelliDean/zcash-prb/actions/workflows/ci.yml)
+[![License: MIT / Apache-2.0](https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-blue.svg)](LICENSE-MIT)
+
 > An open-source local service that lets supported Zcash wallets synchronize received payments without sending their selected transaction or transparent-address lookups to a remote lightwallet server.
 
 ---

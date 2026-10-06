@@ -9,17 +9,16 @@ use tonic::{Request, Response, Status};
 
 pub type ResponseStream<T> = Pin<Box<dyn Stream<Item = Result<T, Status>> + Send + 'static>>;
 
-pub async fn get_latest_block(storage: &Arc<dyn StorageBackend>) -> Result<Response<BlockId>, Status> {
+pub async fn get_latest_block(
+    storage: &Arc<dyn StorageBackend>,
+) -> Result<Response<BlockId>, Status> {
     let (height, hash) = storage
         .get_latest_block()
         .await
         .map_err(|e| Status::internal(e.to_string()))?
         .ok_or_else(|| Status::unavailable("Bridge coverage not yet initialized"))?;
 
-    Ok(Response::new(BlockId {
-        height: height.0 as u64,
-        hash: hash.as_bytes().to_vec(),
-    }))
+    Ok(Response::new(BlockId { height: height.0 as u64, hash: hash.as_bytes().to_vec() }))
 }
 
 pub async fn get_block(

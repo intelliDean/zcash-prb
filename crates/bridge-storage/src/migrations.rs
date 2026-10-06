@@ -92,10 +92,7 @@ pub fn apply_migrations(conn: &mut Connection) -> Result<(), rusqlite::Error> {
         "ALTER TABLE coverage_metadata ADD COLUMN acquisition_failures_count INTEGER NOT NULL DEFAULT 0",
         [],
     );
-    let _ = conn.execute(
-        "ALTER TABLE coverage_metadata ADD COLUMN last_error TEXT NULL",
-        [],
-    );
+    let _ = conn.execute("ALTER TABLE coverage_metadata ADD COLUMN last_error TEXT NULL", []);
 
     Ok(())
 }

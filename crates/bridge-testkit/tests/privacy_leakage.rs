@@ -71,10 +71,7 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
 
     // 2. Setup local bridge with in-memory SQLite storage
     let storage = Arc::new(SqliteStorage::in_memory().unwrap());
-    storage
-        .init_coverage(Network::Mainnet, BlockHeight(100))
-        .await
-        .unwrap();
+    storage.init_coverage(Network::Mainnet, BlockHeight(100)).await.unwrap();
 
     let config = BridgeConfig {
         network: Network::Mainnet,
@@ -123,20 +120,13 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
     });
 
     // 4. Connect simulated client to local bridge
-    let channel = Channel::from_shared(format!("http://{}", local_addr))
-        .unwrap()
-        .connect()
-        .await
-        .unwrap();
+    let channel =
+        Channel::from_shared(format!("http://{}", local_addr)).unwrap().connect().await.unwrap();
     let mut client = CompactTxStreamerClient::new(channel);
 
     // Client A queries tx1
     let res1 = client
-        .get_transaction(TxFilter {
-            block: None,
-            index: 0,
-            hash: tx1_hash.to_vec(),
-        })
+        .get_transaction(TxFilter { block: None, index: 0, hash: tx1_hash.to_vec() })
         .await
         .unwrap()
         .into_inner();
@@ -144,11 +134,7 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
 
     // Client B queries tx2
     let res2 = client
-        .get_transaction(TxFilter {
-            block: None,
-            index: 0,
-            hash: tx2_hash.to_vec(),
-        })
+        .get_transaction(TxFilter { block: None, index: 0, hash: tx2_hash.to_vec() })
         .await
         .unwrap()
         .into_inner();

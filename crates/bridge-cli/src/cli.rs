@@ -1,7 +1,7 @@
-use std::path::{Path, PathBuf};
-use clap::{Parser, Subcommand};
-use bridge_core::BridgeConfig;
 use crate::commands::{run_benchmark, run_init_config, run_start, run_status, run_stop, StartArgs};
+use bridge_core::BridgeConfig;
+use clap::{Parser, Subcommand};
+use std::path::{Path, PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(name = "zcash-private-bridge", version, about = "Zcash Private Receive Bridge Daemon")]
@@ -79,22 +79,8 @@ impl Cli {
             Commands::Benchmark { blocks, provider } => {
                 run_benchmark(&config, blocks, provider).await
             }
-            Commands::Start {
-                bind,
-                provider,
-                coverage_start,
-                network,
-            } => {
-                run_start(
-                    config,
-                    StartArgs {
-                        bind,
-                        provider,
-                        coverage_start,
-                        network,
-                    },
-                )
-                .await
+            Commands::Start { bind, provider, coverage_start, network } => {
+                run_start(config, StartArgs { bind, provider, coverage_start, network }).await
             }
         }
     }

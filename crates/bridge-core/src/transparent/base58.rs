@@ -55,9 +55,17 @@ mod tests {
     fn test_base58check_encoding() {
         let dummy_hash = [0x42u8; 20];
         let addr_mainnet = base58check_encode([0x1c, 0xb8], &dummy_hash);
-        assert!(addr_mainnet.starts_with("t1"), "Mainnet P2PKH should start with t1: {}", addr_mainnet);
+        assert!(
+            addr_mainnet.starts_with("t1"),
+            "Mainnet P2PKH should start with t1: {}",
+            addr_mainnet
+        );
 
         let addr_testnet = base58check_encode([0x1d, 0x25], &dummy_hash);
-        assert!(addr_testnet.starts_with("tm"), "Testnet P2PKH should start with tm: {}", addr_testnet);
+        assert!(
+            addr_testnet.starts_with("tm"),
+            "Testnet P2PKH should start with tm: {}",
+            addr_testnet
+        );
     }
 }

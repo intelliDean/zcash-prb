@@ -35,10 +35,7 @@ pub async fn run_benchmark(
     Ok(())
 }
 
-async fn fetch_tip_and_range(
-    client: &UpstreamClient,
-    blocks: u32,
-) -> Result<(u32, u32)> {
+async fn fetch_tip_and_range(client: &UpstreamClient, blocks: u32) -> Result<(u32, u32)> {
     println!("\n1. Querying Upstream Chain Tip...");
     let tip = client.get_latest_block().await?;
     let tip_height = tip.height as u32;
@@ -114,5 +111,7 @@ fn print_summary(
     println!("Block Data Downloaded:     {:.2} KB", block_bytes as f64 / 1024.0);
     println!("Tx Data Downloaded:        {:.2} KB", tx_bytes as f64 / 1024.0);
     println!("Total Network Ingress:     {:.2} KB", (block_bytes + tx_bytes) as f64 / 1024.0);
-    println!("Repeat-Sync Savings:       100% (Subsequent queries served locally with 0 upstream RPCs)");
+    println!(
+        "Repeat-Sync Savings:       100% (Subsequent queries served locally with 0 upstream RPCs)"
+    );
 }

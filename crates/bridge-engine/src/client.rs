@@ -1,8 +1,8 @@
 use bridge_core::{BlockHeight, BridgeError, TxId};
 use bridge_proto::compact_tx_streamer_client::CompactTxStreamerClient;
 use bridge_proto::{
-    BlockId, BlockRange, CompactBlock, GetSubtreeRootsArg, RawTransaction, SubtreeRoot,
-    TreeState, TxFilter,
+    BlockId, BlockRange, CompactBlock, GetSubtreeRootsArg, RawTransaction, SubtreeRoot, TreeState,
+    TxFilter,
 };
 use std::time::Duration;
 use tonic::transport::Channel;
@@ -15,10 +15,7 @@ pub struct UpstreamClient {
 
 impl UpstreamClient {
     pub fn new(endpoint: impl Into<String>, timeout_sec: u64) -> Self {
-        Self {
-            endpoint: endpoint.into(),
-            timeout: Duration::from_secs(timeout_sec),
-        }
+        Self { endpoint: endpoint.into(), timeout: Duration::from_secs(timeout_sec) }
     }
 
     async fn connect(&self) -> Result<CompactTxStreamerClient<Channel>, BridgeError> {
@@ -27,10 +24,9 @@ impl UpstreamClient {
             .timeout(self.timeout)
             .connect_timeout(Duration::from_secs(10));
 
-        let channel = endpoint
-            .connect()
-            .await
-            .map_err(|e| BridgeError::Upstream(format!("Failed to connect to upstream {}: {e}", self.endpoint)))?;
+        let channel = endpoint.connect().await.map_err(|e| {
+            BridgeError::Upstream(format!("Failed to connect to upstream {}: {e}", self.endpoint))
+        })?;
 
         Ok(CompactTxStreamerClient::new(channel))
     }
@@ -47,14 +43,10 @@ impl UpstreamClient {
 
     pub async fn get_block(&self, height: BlockHeight) -> Result<CompactBlock, BridgeError> {
         let mut client = self.connect().await?;
-        let req = BlockId {
-            height: height.0 as u64,
-            hash: vec![],
-        };
-        let res = client
-            .get_block(req)
-            .await
-            .map_err(|e| BridgeError::Upstream(format!("GetBlock RPC failed for height {}: {e}", height.0)))?;
+        let req = BlockId { height: height.0 as u64, hash: vec![] };
+        let res = client.get_block(req).await.map_err(|e| {
+            BridgeError::Upstream(format!("GetBlock RPC failed for height {}: {e}", height.0))
+        })?;
 
         Ok(res.into_inner())
     }
@@ -66,14 +58,8 @@ impl UpstreamClient {
     ) -> Result<Vec<CompactBlock>, BridgeError> {
         let mut client = self.connect().await?;
         let req = BlockRange {
-            start: Some(BlockId {
-                height: start.0 as u64,
-                hash: vec![],
-            }),
-            end: Some(BlockId {
-                height: end.0 as u64,
-                hash: vec![],
-            }),
+            start: Some(BlockId { height: start.0 as u64, hash: vec![] }),
+            end: Some(BlockId { height: end.0 as u64, hash: vec![] }),
             pool_types: vec![],
         };
 
@@ -97,31 +83,22 @@ impl UpstreamClient {
 
     pub async fn get_transaction(&self, txid: &TxId) -> Result<RawTransaction, BridgeError> {
         let mut client = self.connect().await?;
-        let req = TxFilter {
-            block: None,
-            index: 0,
-            hash: txid.0.to_vec(),
-        };
+        let req = TxFilter { block: None, index: 0, hash: txid.0.to_vec() };
 
-        let res = client
-            .get_transaction(req)
-            .await
-            .map_err(|e| BridgeError::Upstream(format!("GetTransaction RPC failed for {txid}: {e}")))?;
+        let res = client.get_transaction(req).await.map_err(|e| {
+            BridgeError::Upstream(format!("GetTransaction RPC failed for {txid}: {e}"))
+        })?;
 
         Ok(res.into_inner())
     }
 
     pub async fn get_tree_state(&self, height: BlockHeight) -> Result<TreeState, BridgeError> {
         let mut client = self.connect().await?;
-        let req = BlockId {
-            height: height.0 as u64,
-            hash: vec![],
-        };
+        let req = BlockId { height: height.0 as u64, hash: vec![] };
 
-        let res = client
-            .get_tree_state(req)
-            .await
-            .map_err(|e| BridgeError::Upstream(format!("GetTreeState RPC failed for height {}: {e}", height.0)))?;
+        let res = client.get_tree_state(req).await.map_err(|e| {
+            BridgeError::Upstream(format!("GetTreeState RPC failed for height {}: {e}", height.0))
+        })?;
 
         Ok(res.into_inner())
     }
@@ -133,11 +110,7 @@ impl UpstreamClient {
         max_entries: u32,
     ) -> Result<Vec<SubtreeRoot>, BridgeError> {
         let mut client = self.connect().await?;
-        let req = GetSubtreeRootsArg {
-            shielded_protocol: pool,
-            start_index,
-            max_entries,
-        };
+        let req = GetSubtreeRootsArg { shielded_protocol: pool, start_index, max_entries };
 
         let mut stream = client
             .get_subtree_roots(req)

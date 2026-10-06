@@ -33,7 +33,9 @@ pub async fn get_transaction(
     Ok(Response::new(raw_tx))
 }
 
-pub fn send_transaction(_request: Request<RawTransaction>) -> Result<Response<SendResponse>, Status> {
+pub fn send_transaction(
+    _request: Request<RawTransaction>,
+) -> Result<Response<SendResponse>, Status> {
     // Enforce strict MVP policy: deny unshielded transaction broadcasts
     warn!("Blocked SendTransaction call: private receive bridge denies broadcasts in MVP profile");
     Err(Status::permission_denied(

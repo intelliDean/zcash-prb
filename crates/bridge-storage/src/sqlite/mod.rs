@@ -8,12 +8,10 @@ use crate::migrations::apply_migrations;
 use crate::traits::{StorageBackend, VerifiedIntervalBatch};
 use async_trait::async_trait;
 use bridge_core::{
-    BlockHash, BlockHeight, BridgeError, CoverageMetadata, IntervalRange, Network, TransparentAddress,
-    TxId,
+    BlockHash, BlockHeight, BridgeError, CoverageMetadata, IntervalRange, Network,
+    TransparentAddress, TxId,
 };
-use bridge_proto::{
-    CompactBlock, GetAddressUtxosReply, RawTransaction, SubtreeRoot, TreeState,
-};
+use bridge_proto::{CompactBlock, GetAddressUtxosReply, RawTransaction, SubtreeRoot, TreeState};
 use rusqlite::Connection;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -26,16 +24,15 @@ pub struct SqliteStorage {
 impl SqliteStorage {
     pub fn open(path: impl AsRef<Path>) -> Result<Self, BridgeError> {
         if let Some(parent) = path.as_ref().parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| BridgeError::Storage(format!("Failed to create storage directory: {e}")))?;
+            std::fs::create_dir_all(parent).map_err(|e| {
+                BridgeError::Storage(format!("Failed to create storage directory: {e}"))
+            })?;
         }
         let mut conn = Connection::open(path)
             .map_err(|e| BridgeError::Storage(format!("Failed to open SQLite database: {e}")))?;
         apply_migrations(&mut conn)
             .map_err(|e| BridgeError::Storage(format!("Failed to apply migrations: {e}")))?;
-        Ok(Self {
-            conn: Arc::new(Mutex::new(conn)),
-        })
+        Ok(Self { conn: Arc::new(Mutex::new(conn)) })
     }
 
     pub fn in_memory() -> Result<Self, BridgeError> {
@@ -43,9 +40,7 @@ impl SqliteStorage {
             .map_err(|e| BridgeError::Storage(format!("Failed to open in-memory SQLite: {e}")))?;
         apply_migrations(&mut conn)
             .map_err(|e| BridgeError::Storage(format!("Failed to apply migrations: {e}")))?;
-        Ok(Self {
-            conn: Arc::new(Mutex::new(conn)),
-        })
+        Ok(Self { conn: Arc::new(Mutex::new(conn)) })
     }
 }
 
@@ -61,7 +56,11 @@ impl StorageBackend for SqliteStorage {
         .map_err(|e| BridgeError::Storage(format!("Join error: {e}")))?
     }
 
-    async fn init_coverage(&self, network: Network, start_height: BlockHeight) -> Result<(), BridgeError> {
+    async fn init_coverage(
+        &self,
+        network: Network,
+        start_height: BlockHeight,
+    ) -> Result<(), BridgeError> {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
@@ -81,7 +80,10 @@ impl StorageBackend for SqliteStorage {
         .map_err(|e| BridgeError::Storage(format!("Join error: {e}")))?
     }
 
-    async fn get_compact_block(&self, height: BlockHeight) -> Result<Option<CompactBlock>, BridgeError> {
+    async fn get_compact_block(
+        &self,
+        height: BlockHeight,
+    ) -> Result<Option<CompactBlock>, BridgeError> {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || {
             let conn = conn.lock().unwrap();
@@ -105,7 +107,10 @@ impl StorageBackend for SqliteStorage {
         .map_err(|e| BridgeError::Storage(format!("Join error: {e}")))?
     }
 
-    async fn get_full_transaction(&self, txid: &TxId) -> Result<Option<RawTransaction>, BridgeError> {
+    async fn get_full_transaction(
+        &self,
+        txid: &TxId,
+    ) -> Result<Option<RawTransaction>, BridgeError> {
         let conn = self.conn.clone();
         let txid_clone = *txid;
         tokio::task::spawn_blocking(move || {
@@ -141,7 +146,10 @@ impl StorageBackend for SqliteStorage {
         .map_err(|e| BridgeError::Storage(format!("Join error: {e}")))?
     }
 
-    async fn get_address_utxos(&self, address: &TransparentAddress) -> Result<Vec<GetAddressUtxosReply>, BridgeError> {
+    async fn get_address_utxos(
+        &self,
+        address: &TransparentAddress,
+    ) -> Result<Vec<GetAddressUtxosReply>, BridgeError> {
         let conn = self.conn.clone();
         let addr = address.clone();
         tokio::task::spawn_blocking(move || {
@@ -167,7 +175,10 @@ impl StorageBackend for SqliteStorage {
         .map_err(|e| BridgeError::Storage(format!("Join error: {e}")))?
     }
 
-    async fn commit_verified_interval(&self, batch: VerifiedIntervalBatch) -> Result<(), BridgeError> {
+    async fn commit_verified_interval(
+        &self,
+        batch: VerifiedIntervalBatch,
+    ) -> Result<(), BridgeError> {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || {
             let mut conn = conn.lock().unwrap();
@@ -182,8 +193,9 @@ impl StorageBackend for SqliteStorage {
             batch::insert_tree_states(&tx, &batch.tree_states)?;
             batch::update_coverage_checkpoint(&tx, batch.end_height, &batch.end_block_hash)?;
 
-            tx.commit()
-                .map_err(|e| BridgeError::Storage(format!("Failed to commit interval batch: {e}")))?;
+            tx.commit().map_err(|e| {
+                BridgeError::Storage(format!("Failed to commit interval batch: {e}"))
+            })?;
 
             Ok(())
         })

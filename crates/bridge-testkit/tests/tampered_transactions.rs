@@ -13,13 +13,7 @@ async fn test_tampered_transaction_rejected_and_recorded_as_failure() {
 
     // Upstream returns corrupted/tampered bytes whose recomputed hash will NOT match declared_txid
     let tampered_tx_data = vec![0x04, 0x00, 0x00, 0x80, 0x99, 0x88, 0x77];
-    mock.add_transaction(
-        &declared_txid,
-        RawTransaction {
-            data: tampered_tx_data,
-            height: 200,
-        },
-    );
+    mock.add_transaction(&declared_txid, RawTransaction { data: tampered_tx_data, height: 200 });
 
     let b1 = CompactBlock {
         height: 200,
@@ -45,10 +39,7 @@ async fn test_tampered_transaction_rejected_and_recorded_as_failure() {
     let (upstream_addr, _mock_shutdown) = start_mock_upstream(mock).await.unwrap();
 
     let storage = Arc::new(SqliteStorage::in_memory().unwrap());
-    storage
-        .init_coverage(Network::Mainnet, BlockHeight(200))
-        .await
-        .unwrap();
+    storage.init_coverage(Network::Mainnet, BlockHeight(200)).await.unwrap();
 
     let config = BridgeConfig {
         network: Network::Mainnet,

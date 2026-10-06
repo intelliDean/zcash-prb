@@ -1,5 +1,5 @@
-use crate::types::{Network, TransparentAddress};
 use super::base58::base58check_encode;
+use crate::types::{Network, TransparentAddress};
 
 /// Resolves standard Zcash transparent scripts (P2PKH and P2SH) to transparent addresses.
 pub fn script_pubkey_to_address(script: &[u8], network: Network) -> TransparentAddress {
@@ -49,14 +49,14 @@ fn parse_p2sh_hash160(script: &[u8]) -> Option<[u8; 20]> {
 
 fn network_p2pkh_prefix(network: Network) -> [u8; 2] {
     match network {
-        Network::Mainnet => [0x1c, 0xb8],        // "t1..."
+        Network::Mainnet => [0x1c, 0xb8],                    // "t1..."
         Network::Testnet | Network::Regtest => [0x1d, 0x25], // "tm..."
     }
 }
 
 fn network_p2sh_prefix(network: Network) -> [u8; 2] {
     match network {
-        Network::Mainnet => [0x1c, 0xbd],        // "t3..."
+        Network::Mainnet => [0x1c, 0xbd],                    // "t3..."
         Network::Testnet | Network::Regtest => [0x1c, 0xba], // "t2..."
     }
 }

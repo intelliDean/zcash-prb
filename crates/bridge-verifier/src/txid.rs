@@ -38,9 +38,7 @@ fn compute_legacy_digest(raw_tx_bytes: &[u8]) -> TxId {
 
 /// Computes direct BLAKE2b-256 hash without personalization (for testnet/mocked matching).
 fn compute_direct_blake2b_digest(raw_tx_bytes: &[u8]) -> [u8; 32] {
-    let direct = blake2b_simd::Params::new()
-        .hash_length(32)
-        .hash(raw_tx_bytes);
+    let direct = blake2b_simd::Params::new().hash_length(32).hash(raw_tx_bytes);
 
     let mut out = [0u8; 32];
     out.copy_from_slice(direct.as_bytes());

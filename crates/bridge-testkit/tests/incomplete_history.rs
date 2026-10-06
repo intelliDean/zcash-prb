@@ -1,16 +1,15 @@
 use bridge_core::{BlockHeight, Network, TransparentAddress, TxId};
 use bridge_proto::compact_tx_streamer_server::CompactTxStreamer;
 use bridge_server::BridgeGrpcService;
-use bridge_storage::{SqliteStorage, StorageBackend, TransparentSpendRecord, VerifiedIntervalBatch};
+use bridge_storage::{
+    SqliteStorage, StorageBackend, TransparentSpendRecord, VerifiedIntervalBatch,
+};
 use std::sync::Arc;
 
 #[tokio::test]
 async fn test_incomplete_history_returns_failed_precondition() {
     let storage = Arc::new(SqliteStorage::in_memory().unwrap());
-    storage
-        .init_coverage(Network::Mainnet, BlockHeight(5000))
-        .await
-        .unwrap();
+    storage.init_coverage(Network::Mainnet, BlockHeight(5000)).await.unwrap();
 
     let test_addr = TransparentAddress::new("t1TestIncompleteAddress12345");
 

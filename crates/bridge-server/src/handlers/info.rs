@@ -48,8 +48,5 @@ pub async fn get_lightd_info(
 pub fn ping(request: Request<ProtoDuration>) -> Result<Response<PingResponse>, Status> {
     let dur = request.into_inner();
     debug!("Ping received with interval: {} us", dur.interval_us);
-    Ok(Response::new(PingResponse {
-        entry: 1,
-        exit: 0,
-    }))
+    Ok(Response::new(PingResponse { entry: 1, exit: 0 }))
 }

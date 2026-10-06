@@ -73,34 +73,30 @@ pub fn query_taddress_transactions(
              FROM full_transactions ft
              JOIN transparent_outputs t_out ON ft.txid = t_out.txid
              WHERE t_out.address = ?1 AND ft.height >= ?2 AND ft.height <= ?3
-             ORDER BY ft.height ASC".to_string(),
-            vec![
-                Box::new(addr_str),
-                Box::new(r.start.0),
-                Box::new(r.end.0),
-            ],
+             ORDER BY ft.height ASC"
+                .to_string(),
+            vec![Box::new(addr_str), Box::new(r.start.0), Box::new(r.end.0)],
         ),
         None => (
             "SELECT DISTINCT ft.raw_data, ft.height 
              FROM full_transactions ft
              JOIN transparent_outputs t_out ON ft.txid = t_out.txid
              WHERE t_out.address = ?1
-             ORDER BY ft.height ASC".to_string(),
+             ORDER BY ft.height ASC"
+                .to_string(),
             vec![Box::new(addr_str)],
         ),
     };
 
-    let rusqlite_params: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|b| b.as_ref()).collect();
+    let rusqlite_params: Vec<&dyn rusqlite::ToSql> =
+        params_vec.iter().map(|b| b.as_ref()).collect();
     let mut stmt = conn.prepare(&query).map_err(|e| BridgeError::Storage(e.to_string()))?;
 
     let rows = stmt
         .query_map(rusqlite_params.as_slice(), |row| {
             let raw_data: Vec<u8> = row.get(0)?;
             let height: u32 = row.get(1)?;
-            Ok(RawTransaction {
-                data: raw_data,
-                height: height as u64,
-            })
+            Ok(RawTransaction { data: raw_data, height: height as u64 })
         })
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
 

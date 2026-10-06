@@ -1,6 +1,6 @@
+use crate::pid::PidFile;
 use anyhow::Result;
 use bridge_core::BridgeConfig;
-use crate::pid::PidFile;
 use tracing::warn;
 
 pub fn run_stop(config: &BridgeConfig) -> Result<()> {

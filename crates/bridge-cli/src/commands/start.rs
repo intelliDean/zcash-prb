@@ -1,9 +1,9 @@
+use crate::pid::PidFile;
 use anyhow::Result;
 use bridge_core::{BridgeConfig, Network};
 use bridge_engine::AcquisitionWorker;
 use bridge_server::{run_server, BridgeGrpcService};
 use bridge_storage::SqliteStorage;
-use crate::pid::PidFile;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::watch;
@@ -53,11 +53,7 @@ pub async fn run_start(mut config: BridgeConfig, args: StartArgs) -> Result<()> 
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
 
     // 1. Spawn Acquisition Worker
-    let worker = AcquisitionWorker::new(
-        config.clone(),
-        storage.clone(),
-        shutdown_rx.clone(),
-    );
+    let worker = AcquisitionWorker::new(config.clone(), storage.clone(), shutdown_rx.clone());
     let worker_handle = tokio::spawn(async move {
         worker.run().await;
     });

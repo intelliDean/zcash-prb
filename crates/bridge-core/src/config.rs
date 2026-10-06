@@ -81,10 +81,12 @@ impl Default for BridgeConfig {
 
 impl BridgeConfig {
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, crate::error::BridgeError> {
-        let content = std::fs::read_to_string(path.as_ref())
-            .map_err(|e| crate::error::BridgeError::Config(format!("Failed to read config file: {e}")))?;
-        toml::from_str(&content)
-            .map_err(|e| crate::error::BridgeError::Config(format!("Failed to parse config file: {e}")))
+        let content = std::fs::read_to_string(path.as_ref()).map_err(|e| {
+            crate::error::BridgeError::Config(format!("Failed to read config file: {e}"))
+        })?;
+        toml::from_str(&content).map_err(|e| {
+            crate::error::BridgeError::Config(format!("Failed to parse config file: {e}"))
+        })
     }
 
     /// Enforces security invariant that the daemon binds to localhost only.

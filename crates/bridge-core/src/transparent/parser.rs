@@ -1,6 +1,6 @@
+use super::script::script_pubkey_to_address;
 use crate::error::BridgeError;
 use crate::types::{Network, TransparentAddress, TxId};
-use super::script::script_pubkey_to_address;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedTransparentInput {
@@ -104,10 +104,7 @@ fn parse_single_transparent_input(
     if prev_txid_bytes == [0u8; 32] {
         Ok(None) // Coinbase input
     } else {
-        Ok(Some(ParsedTransparentInput {
-            prev_txid: TxId(prev_txid_bytes),
-            prev_vout,
-        }))
+        Ok(Some(ParsedTransparentInput { prev_txid: TxId(prev_txid_bytes), prev_vout }))
     }
 }
 
@@ -134,12 +131,7 @@ fn parse_single_transparent_output(
     *cursor += script_len;
 
     let address = script_pubkey_to_address(&script_pubkey, network);
-    Ok(ParsedTransparentOutput {
-        vout: vout_idx,
-        value_zat,
-        address,
-        script_pubkey,
-    })
+    Ok(ParsedTransparentOutput { vout: vout_idx, value_zat, address, script_pubkey })
 }
 
 /// Parses transparent inputs and outputs from raw Zcash transaction bytes.
@@ -173,7 +165,8 @@ pub fn parse_transparent_transaction(
     let mut outputs = Vec::with_capacity(vout_count as usize);
 
     for vout_idx in 0..vout_count {
-        let output = parse_single_transparent_output(raw_tx_bytes, &mut cursor, vout_idx as u32, network)?;
+        let output =
+            parse_single_transparent_output(raw_tx_bytes, &mut cursor, vout_idx as u32, network)?;
         outputs.push(output);
     }
 

@@ -1,6 +1,8 @@
 use crate::client::UpstreamClient;
 use crate::scheduler::next_interval;
-use bridge_core::{BlockHash, BlockHeight, BridgeConfig, BridgeError, CoverageMetadata, IntervalRange, TxId};
+use bridge_core::{
+    BlockHash, BlockHeight, BridgeConfig, BridgeError, CoverageMetadata, IntervalRange, TxId,
+};
 use bridge_proto::{CompactBlock, RawTransaction, TreeState};
 use bridge_storage::{
     StorageBackend, TransparentOutputRecord, TransparentSpendRecord, VerifiedIntervalBatch,
@@ -24,16 +26,9 @@ impl AcquisitionWorker {
         storage: Arc<dyn StorageBackend>,
         shutdown_rx: watch::Receiver<bool>,
     ) -> Self {
-        let upstream = UpstreamClient::new(
-            config.upstream_provider.clone(),
-            config.request_timeout_sec,
-        );
-        Self {
-            config,
-            storage,
-            upstream,
-            shutdown_rx,
-        }
+        let upstream =
+            UpstreamClient::new(config.upstream_provider.clone(), config.request_timeout_sec);
+        Self { config, storage, upstream, shutdown_rx }
     }
 
     pub async fn run(mut self) {
@@ -64,7 +59,9 @@ impl AcquisitionWorker {
                         "Chain reorganization detected at height {}: expected prev_hash {}, got {}. Rolling back...",
                         height, expected, actual
                     );
-                    if let Err(e) = self.storage.handle_reorg(BlockHeight(height.saturating_sub(1))).await {
+                    if let Err(e) =
+                        self.storage.handle_reorg(BlockHeight(height.saturating_sub(1))).await
+                    {
                         error!("Failed to handle chain reorganization: {e}");
                         tokio::time::sleep(Duration::from_secs(5)).await;
                     }
@@ -203,7 +200,8 @@ impl AcquisitionWorker {
             let upstream = self.upstream.clone();
 
             join_handles.push(tokio::spawn(async move {
-                let _permit = sem.acquire().await.map_err(|e| BridgeError::Upstream(e.to_string()))?;
+                let _permit =
+                    sem.acquire().await.map_err(|e| BridgeError::Upstream(e.to_string()))?;
                 let mut raw_tx = upstream.get_transaction(&txid).await?;
                 raw_tx.height = height as u64;
 
@@ -214,7 +212,8 @@ impl AcquisitionWorker {
 
         let mut full_transactions = Vec::new();
         for h in join_handles {
-            let raw_tx = h.await.map_err(|e| BridgeError::Upstream(format!("Task join failed: {e}")))??;
+            let raw_tx =
+                h.await.map_err(|e| BridgeError::Upstream(format!("Task join failed: {e}")))??;
             full_transactions.push(raw_tx);
         }
 
