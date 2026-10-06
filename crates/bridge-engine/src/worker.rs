@@ -82,13 +82,13 @@ impl AcquisitionWorker {
     }
 
     async fn ensure_coverage_initialized(&self) {
-        if let Ok(meta_opt) = self.storage.get_coverage_metadata().await {
-            if meta_opt.is_none() {
-                let _ = self
-                    .storage
-                    .init_coverage(self.config.network, BlockHeight(self.config.coverage_start_height))
-                    .await;
-            }
+        if let Ok(meta_opt) = self.storage.get_coverage_metadata().await
+            && meta_opt.is_none()
+        {
+            let _ = self
+                .storage
+                .init_coverage(self.config.network, BlockHeight(self.config.coverage_start_height))
+                .await;
         }
     }
 

@@ -51,7 +51,7 @@ pub async fn get_subtree_roots(
 ) -> Result<Response<ResponseStream<SubtreeRoot>>, Status> {
     let req = request.into_inner();
     let roots = storage
-        .get_subtree_roots(req.shielded_protocol, req.start_index as u32, req.max_entries as u32)
+        .get_subtree_roots(req.shielded_protocol, req.start_index, req.max_entries)
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
 

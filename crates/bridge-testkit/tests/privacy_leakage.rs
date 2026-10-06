@@ -98,10 +98,10 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
     // Wait until storage reaches height 101
     for _ in 0..50 {
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-        if let Ok(Some((h, _))) = storage.get_latest_block().await {
-            if h == BlockHeight(101) {
-                break;
-            }
+        if let Ok(Some((h, _))) = storage.get_latest_block().await
+            && h == BlockHeight(101)
+        {
+            break;
         }
     }
 
@@ -164,7 +164,7 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
     );
 
     for call in &final_calls[calls_after_acquisition..] {
-        assert!(!call.contains(&hex::encode(&tx1_hash)));
-        assert!(!call.contains(&hex::encode(&tx2_hash)));
+        assert!(!call.contains(&hex::encode(tx1_hash)));
+        assert!(!call.contains(&hex::encode(tx2_hash)));
     }
 }

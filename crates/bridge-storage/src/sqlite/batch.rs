@@ -141,10 +141,10 @@ pub fn insert_tree_states(tx: &Transaction, tree_states: &[TreeState]) -> Result
             .map_err(|e| BridgeError::Storage(format!("TreeState encode error: {e}")))?;
 
         let mut hash_arr = [0u8; 32];
-        if let Ok(decoded) = hex::decode(&ts.hash) {
-            if decoded.len() == 32 {
-                hash_arr.copy_from_slice(&decoded);
-            }
+        if let Ok(decoded) = hex::decode(&ts.hash)
+            && decoded.len() == 32
+        {
+            hash_arr.copy_from_slice(&decoded);
         }
 
         stmt.execute(params![

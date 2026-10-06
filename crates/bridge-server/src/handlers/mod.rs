@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 pub mod blocks;
 pub mod info;
 pub mod mempool;
