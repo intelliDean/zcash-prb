@@ -1,0 +1,28 @@
+# Zcash Private Receive Bridge Configuration
+
+# Target network: mainnet, testnet, or regtest
+network = "mainnet"
+
+# Upstream public lightwalletd or Zaino provider
+upstream_provider = "https://mainnet.lightwalletd.com:9067"
+
+# Local gRPC endpoint for wallets (SECURITY: must be localhost only)
+bind_address = "127.0.0.1:9067"
+
+# Height from which verified coverage starts
+coverage_start_height = 3000000
+
+# Path to local durable SQLite database (WAL mode)
+storage_path = "data/bridge.db"
+
+# Maximum storage budget in Gigabytes (optional)
+storage_limit_gb = 10
+
+# Maximum concurrent transaction downloads from upstream
+acquisition_concurrency = 8
+
+# Batch size of blocks per verified interval
+interval_size = 50
+
+# Request timeout in seconds for upstream gRPC queries
+request_timeout_sec = 15
