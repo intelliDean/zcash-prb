@@ -1,7 +1,7 @@
 use bridge_core::{BlockHash, BlockHeight, BridgeError, TxId};
 use bridge_proto::{CompactBlock, RawTransaction, SubtreeRoot, TreeState};
 use prost::Message;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 
 pub fn query_latest_block(
     conn: &Connection,
@@ -87,7 +87,10 @@ pub fn query_full_transaction(
         .query_row(params![txid_bytes], |row| {
             let raw_data: Vec<u8> = row.get(0)?;
             let height: u32 = row.get(1)?;
-            Ok(RawTransaction { data: raw_data, height: height as u64 })
+            Ok(RawTransaction {
+                data: raw_data,
+                height: height as u64,
+            })
         })
         .optional()
         .map_err(|e| BridgeError::Storage(e.to_string()))?;

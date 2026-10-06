@@ -17,7 +17,10 @@ pub struct BridgeGrpcService {
 
 impl BridgeGrpcService {
     pub fn new(storage: Arc<dyn StorageBackend>, network_name: impl Into<String>) -> Self {
-        Self { storage, network_name: network_name.into() }
+        Self {
+            storage,
+            network_name: network_name.into(),
+        }
     }
 }
 
@@ -107,7 +110,9 @@ impl CompactTxStreamer for BridgeGrpcService {
         &self,
         _request: Request<tonic::Streaming<Address>>,
     ) -> Result<Response<Balance>, Status> {
-        Err(Status::unimplemented("GetTaddressBalanceStream not implemented"))
+        Err(Status::unimplemented(
+            "GetTaddressBalanceStream not implemented",
+        ))
     }
 
     async fn get_mempool_tx(

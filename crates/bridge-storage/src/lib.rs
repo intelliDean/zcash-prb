@@ -26,7 +26,11 @@ mod tests {
             .await
             .expect("init coverage failed");
 
-        let meta = storage.get_coverage_metadata().await.expect("query failed").unwrap();
+        let meta = storage
+            .get_coverage_metadata()
+            .await
+            .expect("query failed")
+            .unwrap();
         assert_eq!(meta.network, Network::Mainnet);
         assert_eq!(meta.coverage_start_height, BlockHeight(3_000_000));
         assert_eq!(meta.committed_height, BlockHeight(2_999_999));
@@ -35,7 +39,10 @@ mod tests {
     #[tokio::test]
     async fn test_commit_interval_and_query() {
         let storage = SqliteStorage::in_memory().expect("in-memory db failed");
-        storage.init_coverage(Network::Mainnet, BlockHeight(100)).await.unwrap();
+        storage
+            .init_coverage(Network::Mainnet, BlockHeight(100))
+            .await
+            .unwrap();
 
         let block = CompactBlock {
             height: 100,
@@ -47,7 +54,10 @@ mod tests {
             chain_metadata: None,
         };
 
-        let raw_tx = RawTransaction { data: vec![0xde, 0xad, 0xbe, 0xef], height: 100 };
+        let raw_tx = RawTransaction {
+            data: vec![0xde, 0xad, 0xbe, 0xef],
+            height: 100,
+        };
 
         let tx_hash = blake2b_simd::Params::new()
             .hash_length(32)
@@ -84,8 +94,10 @@ mod tests {
         assert_eq!(latest_hash, BlockHash([1u8; 32]));
 
         // Query UTXO
-        let utxos =
-            storage.get_address_utxos(&TransparentAddress::new("t1TestAddress")).await.unwrap();
+        let utxos = storage
+            .get_address_utxos(&TransparentAddress::new("t1TestAddress"))
+            .await
+            .unwrap();
         assert_eq!(utxos.len(), 1);
         assert_eq!(utxos[0].value_zat, 50_000_000);
         assert_eq!(utxos[0].address, "t1TestAddress");
@@ -94,7 +106,10 @@ mod tests {
     #[tokio::test]
     async fn test_reorg_handling() {
         let storage = SqliteStorage::in_memory().expect("in-memory db failed");
-        storage.init_coverage(Network::Mainnet, BlockHeight(100)).await.unwrap();
+        storage
+            .init_coverage(Network::Mainnet, BlockHeight(100))
+            .await
+            .unwrap();
 
         let b1 = CompactBlock {
             height: 100,

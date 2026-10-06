@@ -77,19 +77,24 @@ pub async fn get_taddress_balance(
 
     for addr_str in req.addresses {
         let addr = TransparentAddress::new(addr_str);
-        let utxos = storage.get_address_utxos(&addr).await.map_err(|e| match e {
-            bridge_core::BridgeError::IncompleteHistory { .. } => Status::failed_precondition(
-                "Incomplete transparent history: prior output out of coverage",
-            ),
-            _ => Status::internal(e.to_string()),
-        })?;
+        let utxos = storage
+            .get_address_utxos(&addr)
+            .await
+            .map_err(|e| match e {
+                bridge_core::BridgeError::IncompleteHistory { .. } => Status::failed_precondition(
+                    "Incomplete transparent history: prior output out of coverage",
+                ),
+                _ => Status::internal(e.to_string()),
+            })?;
 
         for u in utxos {
             total_zat += u.value_zat;
         }
     }
 
-    Ok(Response::new(Balance { value_zat: total_zat }))
+    Ok(Response::new(Balance {
+        value_zat: total_zat,
+    }))
 }
 
 pub async fn get_address_utxos(
@@ -101,16 +106,21 @@ pub async fn get_address_utxos(
 
     for addr_str in req.addresses {
         let addr = TransparentAddress::new(addr_str);
-        let utxos = storage.get_address_utxos(&addr).await.map_err(|e| match e {
-            bridge_core::BridgeError::IncompleteHistory { .. } => Status::failed_precondition(
-                "Incomplete transparent history: prior output out of coverage",
-            ),
-            _ => Status::internal(e.to_string()),
-        })?;
+        let utxos = storage
+            .get_address_utxos(&addr)
+            .await
+            .map_err(|e| match e {
+                bridge_core::BridgeError::IncompleteHistory { .. } => Status::failed_precondition(
+                    "Incomplete transparent history: prior output out of coverage",
+                ),
+                _ => Status::internal(e.to_string()),
+            })?;
         all_utxos.extend(utxos);
     }
 
-    Ok(Response::new(GetAddressUtxosReplyList { address_utxos: all_utxos }))
+    Ok(Response::new(GetAddressUtxosReplyList {
+        address_utxos: all_utxos,
+    }))
 }
 
 pub async fn get_address_utxos_stream(
@@ -122,12 +132,15 @@ pub async fn get_address_utxos_stream(
 
     for addr_str in req.addresses {
         let addr = TransparentAddress::new(addr_str);
-        let utxos = storage.get_address_utxos(&addr).await.map_err(|e| match e {
-            bridge_core::BridgeError::IncompleteHistory { .. } => Status::failed_precondition(
-                "Incomplete transparent history: prior output out of coverage",
-            ),
-            _ => Status::internal(e.to_string()),
-        })?;
+        let utxos = storage
+            .get_address_utxos(&addr)
+            .await
+            .map_err(|e| match e {
+                bridge_core::BridgeError::IncompleteHistory { .. } => Status::failed_precondition(
+                    "Incomplete transparent history: prior output out of coverage",
+                ),
+                _ => Status::internal(e.to_string()),
+            })?;
         all_utxos.extend(utxos);
     }
 

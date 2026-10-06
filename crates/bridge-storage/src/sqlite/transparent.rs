@@ -1,6 +1,6 @@
 use bridge_core::{BridgeError, IntervalRange, TransparentAddress};
 use bridge_proto::{GetAddressUtxosReply, RawTransaction};
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 
 pub fn query_address_utxos(
     conn: &Connection,
@@ -90,13 +90,18 @@ pub fn query_taddress_transactions(
 
     let rusqlite_params: Vec<&dyn rusqlite::ToSql> =
         params_vec.iter().map(|b| b.as_ref()).collect();
-    let mut stmt = conn.prepare(&query).map_err(|e| BridgeError::Storage(e.to_string()))?;
+    let mut stmt = conn
+        .prepare(&query)
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
 
     let rows = stmt
         .query_map(rusqlite_params.as_slice(), |row| {
             let raw_data: Vec<u8> = row.get(0)?;
             let height: u32 = row.get(1)?;
-            Ok(RawTransaction { data: raw_data, height: height as u64 })
+            Ok(RawTransaction {
+                data: raw_data,
+                height: height as u64,
+            })
         })
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
 

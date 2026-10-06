@@ -6,7 +6,10 @@ use tracing::warn;
 pub fn run_stop(config: &BridgeConfig) -> Result<()> {
     let pid_file = PidFile::from_storage_path(&config.storage_path);
     if !pid_file.path().exists() {
-        println!("No running daemon found (missing PID file {:?})", pid_file.path());
+        println!(
+            "No running daemon found (missing PID file {:?})",
+            pid_file.path()
+        );
         return Ok(());
     }
 

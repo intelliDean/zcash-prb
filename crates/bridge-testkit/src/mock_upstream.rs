@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
-use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::Stream;
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
 type ResponseStream<T> = Pin<Box<dyn Stream<Item = Result<T, Status>> + Send + 'static>>;
@@ -64,14 +64,23 @@ impl CompactTxStreamer for MockUpstreamServer {
         &self,
         _request: Request<ChainSpec>,
     ) -> Result<Response<BlockId>, Status> {
-        self.call_history.lock().unwrap().push("GetLatestBlock".to_string());
+        self.call_history
+            .lock()
+            .unwrap()
+            .push("GetLatestBlock".to_string());
         let height = *self.latest_height.lock().unwrap();
-        Ok(Response::new(BlockId { height, hash: vec![1u8; 32] }))
+        Ok(Response::new(BlockId {
+            height,
+            hash: vec![1u8; 32],
+        }))
     }
 
     async fn get_block(&self, request: Request<BlockId>) -> Result<Response<CompactBlock>, Status> {
         let req = request.into_inner();
-        self.call_history.lock().unwrap().push(format!("GetBlock({})", req.height));
+        self.call_history
+            .lock()
+            .unwrap()
+            .push(format!("GetBlock({})", req.height));
 
         let blocks = self.blocks.lock().unwrap();
         let b = blocks
@@ -96,7 +105,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         let req = request.into_inner();
         let start = req.start.unwrap().height;
         let end = req.end.unwrap().height;
-        self.call_history.lock().unwrap().push(format!("GetBlockRange({}..={})", start, end));
+        self.call_history
+            .lock()
+            .unwrap()
+            .push(format!("GetBlockRange({}..={})", start, end));
 
         let blocks = self.blocks.lock().unwrap();
         let mut result = Vec::new();
@@ -129,7 +141,10 @@ impl CompactTxStreamer for MockUpstreamServer {
     ) -> Result<Response<RawTransaction>, Status> {
         let req = request.into_inner();
         let hex_hash = hex::encode(&req.hash);
-        self.call_history.lock().unwrap().push(format!("GetTransaction({})", hex_hash));
+        self.call_history
+            .lock()
+            .unwrap()
+            .push(format!("GetTransaction({})", hex_hash));
 
         let txs = self.transactions.lock().unwrap();
         let tx = txs
@@ -152,7 +167,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         request: Request<TransparentAddressBlockFilter>,
     ) -> Result<Response<Self::GetTaddressTxidsStream>, Status> {
         let req = request.into_inner();
-        self.call_history.lock().unwrap().push(format!("GetTaddressTxids({})", req.address));
+        self.call_history
+            .lock()
+            .unwrap()
+            .push(format!("GetTaddressTxids({})", req.address));
         Err(Status::unimplemented("unimplemented"))
     }
 
@@ -161,7 +179,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         request: Request<TransparentAddressBlockFilter>,
     ) -> Result<Response<Self::GetTaddressTransactionsStream>, Status> {
         let req = request.into_inner();
-        self.call_history.lock().unwrap().push(format!("GetTaddressTransactions({})", req.address));
+        self.call_history
+            .lock()
+            .unwrap()
+            .push(format!("GetTaddressTransactions({})", req.address));
         Err(Status::unimplemented("unimplemented"))
     }
 
@@ -198,7 +219,10 @@ impl CompactTxStreamer for MockUpstreamServer {
         request: Request<BlockId>,
     ) -> Result<Response<TreeState>, Status> {
         let req = request.into_inner();
-        self.call_history.lock().unwrap().push(format!("GetTreeState({})", req.height));
+        self.call_history
+            .lock()
+            .unwrap()
+            .push(format!("GetTreeState({})", req.height));
         Ok(Response::new(TreeState {
             network: "mainnet".to_string(),
             height: req.height,
@@ -231,7 +255,10 @@ impl CompactTxStreamer for MockUpstreamServer {
     ) -> Result<Response<GetAddressUtxosReplyList>, Status> {
         let req = request.into_inner();
         for a in req.addresses {
-            self.call_history.lock().unwrap().push(format!("GetAddressUtxos({})", a));
+            self.call_history
+                .lock()
+                .unwrap()
+                .push(format!("GetAddressUtxos({})", a));
         }
         Ok(Response::new(GetAddressUtxosReplyList::default()))
     }

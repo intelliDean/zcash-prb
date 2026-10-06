@@ -19,7 +19,9 @@ pub struct ParsedTransparentOutput {
 /// Reads a compact size integer (VarInt) from a byte slice.
 pub fn read_varint(bytes: &[u8], cursor: &mut usize) -> Result<u64, BridgeError> {
     if *cursor >= bytes.len() {
-        return Err(BridgeError::Verification("Unexpected end of transaction".into()));
+        return Err(BridgeError::Verification(
+            "Unexpected end of transaction".into(),
+        ));
     }
     let first = bytes[*cursor];
     *cursor += 1;
@@ -96,7 +98,9 @@ fn parse_single_transparent_input(
 
     let script_len = read_varint(raw_tx_bytes, cursor)? as usize;
     if *cursor + script_len + 4 > raw_tx_bytes.len() {
-        return Err(BridgeError::Verification("Truncated script_sig in tx".into()));
+        return Err(BridgeError::Verification(
+            "Truncated script_sig in tx".into(),
+        ));
     }
     *cursor += script_len; // skip script_sig
     *cursor += 4; // skip sequence
@@ -104,7 +108,10 @@ fn parse_single_transparent_input(
     if prev_txid_bytes == [0u8; 32] {
         Ok(None) // Coinbase input
     } else {
-        Ok(Some(ParsedTransparentInput { prev_txid: TxId(prev_txid_bytes), prev_vout }))
+        Ok(Some(ParsedTransparentInput {
+            prev_txid: TxId(prev_txid_bytes),
+            prev_vout,
+        }))
     }
 }
 
@@ -116,7 +123,9 @@ fn parse_single_transparent_output(
     network: Network,
 ) -> Result<ParsedTransparentOutput, BridgeError> {
     if *cursor + 8 > raw_tx_bytes.len() {
-        return Err(BridgeError::Verification("Truncated output value in tx".into()));
+        return Err(BridgeError::Verification(
+            "Truncated output value in tx".into(),
+        ));
     }
 
     let value_zat = u64::from_le_bytes(raw_tx_bytes[*cursor..*cursor + 8].try_into().unwrap());
@@ -124,14 +133,21 @@ fn parse_single_transparent_output(
 
     let script_len = read_varint(raw_tx_bytes, cursor)? as usize;
     if *cursor + script_len > raw_tx_bytes.len() {
-        return Err(BridgeError::Verification("Truncated script_pubkey in tx".into()));
+        return Err(BridgeError::Verification(
+            "Truncated script_pubkey in tx".into(),
+        ));
     }
 
     let script_pubkey = raw_tx_bytes[*cursor..*cursor + script_len].to_vec();
     *cursor += script_len;
 
     let address = script_pubkey_to_address(&script_pubkey, network);
-    Ok(ParsedTransparentOutput { vout: vout_idx, value_zat, address, script_pubkey })
+    Ok(ParsedTransparentOutput {
+        vout: vout_idx,
+        value_zat,
+        address,
+        script_pubkey,
+    })
 }
 
 /// Parses transparent inputs and outputs from raw Zcash transaction bytes.

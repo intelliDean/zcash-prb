@@ -30,7 +30,12 @@ pub async fn run_benchmark(
     // 4. Metrics summary
     let total_duration = start_time.elapsed();
     let total_rpc_calls = 1 + block_rpc_count + tx_rpc_count;
-    print_summary(total_duration, total_rpc_calls, total_block_bytes, total_tx_bytes);
+    print_summary(
+        total_duration,
+        total_rpc_calls,
+        total_block_bytes,
+        total_tx_bytes,
+    );
 
     Ok(())
 }
@@ -70,7 +75,11 @@ async fn fetch_compact_blocks(
         }
     }
     let block_fetch_duration = block_fetch_start.elapsed();
-    println!("   Fetched {} blocks in {:.2?}", blocks + 1, block_fetch_duration);
+    println!(
+        "   Fetched {} blocks in {:.2?}",
+        blocks + 1,
+        block_fetch_duration
+    );
     println!("   Discovered full transactions: {}", full_txids.len());
 
     Ok((total_bytes, full_txids, rpc_calls))
@@ -108,9 +117,18 @@ fn print_summary(
     println!("\n=== Operating Costs Summary ===");
     println!("Total Time:                {:.2?}", total_duration);
     println!("Total Upstream RPC Calls:  {}", total_rpc_calls);
-    println!("Block Data Downloaded:     {:.2} KB", block_bytes as f64 / 1024.0);
-    println!("Tx Data Downloaded:        {:.2} KB", tx_bytes as f64 / 1024.0);
-    println!("Total Network Ingress:     {:.2} KB", (block_bytes + tx_bytes) as f64 / 1024.0);
+    println!(
+        "Block Data Downloaded:     {:.2} KB",
+        block_bytes as f64 / 1024.0
+    );
+    println!(
+        "Tx Data Downloaded:        {:.2} KB",
+        tx_bytes as f64 / 1024.0
+    );
+    println!(
+        "Total Network Ingress:     {:.2} KB",
+        (block_bytes + tx_bytes) as f64 / 1024.0
+    );
     println!(
         "Repeat-Sync Savings:       100% (Subsequent queries served locally with 0 upstream RPCs)"
     );

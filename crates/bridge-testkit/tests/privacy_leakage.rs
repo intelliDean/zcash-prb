@@ -5,7 +5,7 @@ use bridge_proto::compact_tx_streamer_server::CompactTxStreamerServer;
 use bridge_proto::{CompactBlock, CompactTx, TxFilter};
 use bridge_server::BridgeGrpcService;
 use bridge_storage::{SqliteStorage, StorageBackend};
-use bridge_testkit::{create_test_tx, start_mock_upstream, MockUpstreamServer};
+use bridge_testkit::{MockUpstreamServer, create_test_tx, start_mock_upstream};
 use std::sync::Arc;
 use tokio::sync::watch;
 use tonic::transport::Channel;
@@ -71,7 +71,10 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
 
     // 2. Setup local bridge with in-memory SQLite storage
     let storage = Arc::new(SqliteStorage::in_memory().unwrap());
-    storage.init_coverage(Network::Mainnet, BlockHeight(100)).await.unwrap();
+    storage
+        .init_coverage(Network::Mainnet, BlockHeight(100))
+        .await
+        .unwrap();
 
     let config = BridgeConfig {
         network: Network::Mainnet,
@@ -114,19 +117,28 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
     tokio::spawn(async move {
         tonic::transport::Server::builder()
             .add_service(CompactTxStreamerServer::new(service))
-            .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(local_listener))
+            .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(
+                local_listener,
+            ))
             .await
             .unwrap();
     });
 
     // 4. Connect simulated client to local bridge
-    let channel =
-        Channel::from_shared(format!("http://{}", local_addr)).unwrap().connect().await.unwrap();
+    let channel = Channel::from_shared(format!("http://{}", local_addr))
+        .unwrap()
+        .connect()
+        .await
+        .unwrap();
     let mut client = CompactTxStreamerClient::new(channel);
 
     // Client A queries tx1
     let res1 = client
-        .get_transaction(TxFilter { block: None, index: 0, hash: tx1_hash.to_vec() })
+        .get_transaction(TxFilter {
+            block: None,
+            index: 0,
+            hash: tx1_hash.to_vec(),
+        })
         .await
         .unwrap()
         .into_inner();
@@ -134,7 +146,11 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
 
     // Client B queries tx2
     let res2 = client
-        .get_transaction(TxFilter { block: None, index: 0, hash: tx2_hash.to_vec() })
+        .get_transaction(TxFilter {
+            block: None,
+            index: 0,
+            hash: tx2_hash.to_vec(),
+        })
         .await
         .unwrap()
         .into_inner();

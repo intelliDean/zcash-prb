@@ -2,7 +2,7 @@ use crate::pid::PidFile;
 use anyhow::Result;
 use bridge_core::{BridgeConfig, Network};
 use bridge_engine::AcquisitionWorker;
-use bridge_server::{run_server, BridgeGrpcService};
+use bridge_server::{BridgeGrpcService, run_server};
 use bridge_storage::SqliteStorage;
 use std::net::SocketAddr;
 use std::sync::Arc;

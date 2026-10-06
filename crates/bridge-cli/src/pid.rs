@@ -8,7 +8,9 @@ pub struct PidFile {
 
 impl PidFile {
     pub fn from_storage_path(storage_path: &Path) -> Self {
-        Self { path: storage_path.with_extension("pid") }
+        Self {
+            path: storage_path.with_extension("pid"),
+        }
     }
 
     pub fn path(&self) -> &Path {
@@ -43,8 +45,10 @@ impl PidFile {
         match pid_opt {
             Some(pid) => {
                 info!("Sending SIGTERM to bridge daemon process (PID: {})...", pid);
-                let status =
-                    std::process::Command::new("kill").arg("-15").arg(pid.to_string()).status();
+                let status = std::process::Command::new("kill")
+                    .arg("-15")
+                    .arg(pid.to_string())
+                    .status();
 
                 self.clean();
 

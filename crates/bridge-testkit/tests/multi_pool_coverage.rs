@@ -12,11 +12,16 @@ use std::sync::Arc;
 #[tokio::test]
 async fn test_multi_pool_receipt_coverage() {
     let storage = Arc::new(SqliteStorage::in_memory().unwrap());
-    storage.init_coverage(Network::Mainnet, BlockHeight(1000)).await.unwrap();
+    storage
+        .init_coverage(Network::Mainnet, BlockHeight(1000))
+        .await
+        .unwrap();
 
     let tx_data = vec![0x04, 0x00, 0x00, 0x80, 0x01, 0x02];
-    let tx_hash =
-        blake2b_simd::Params::new().hash_length(32).personal(b"ZcashTxHash_TEMP").hash(&tx_data);
+    let tx_hash = blake2b_simd::Params::new()
+        .hash_length(32)
+        .personal(b"ZcashTxHash_TEMP")
+        .hash(&tx_data);
     let mut txid_arr = [0u8; 32];
     txid_arr.copy_from_slice(tx_hash.as_bytes());
     let txid = TxId(txid_arr);
@@ -64,7 +69,10 @@ async fn test_multi_pool_receipt_coverage() {
 
     let batch = VerifiedIntervalBatch {
         blocks: vec![block.clone()],
-        transactions: vec![RawTransaction { data: tx_data, height: 1000 }],
+        transactions: vec![RawTransaction {
+            data: tx_data,
+            height: 1000,
+        }],
         tree_states: vec![create_test_tree_state(1000, &hex::encode(vec![0xaa; 32]))],
         subtree_roots: vec![],
         transparent_outputs: vec![TransparentOutputRecord {
@@ -83,10 +91,26 @@ async fn test_multi_pool_receipt_coverage() {
     storage.commit_verified_interval(batch).await.unwrap();
 
     // 1. Verify retrieval of multi-pool block
-    let retrieved_block = storage.get_compact_block(BlockHeight(1000)).await.unwrap().unwrap();
-    assert_eq!(retrieved_block.vtx[0].outputs.len(), 1, "Sapling output preserved");
-    assert_eq!(retrieved_block.vtx[0].actions.len(), 1, "Orchard action preserved");
-    assert_eq!(retrieved_block.vtx[0].ironwood_actions.len(), 1, "Ironwood action preserved");
+    let retrieved_block = storage
+        .get_compact_block(BlockHeight(1000))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        retrieved_block.vtx[0].outputs.len(),
+        1,
+        "Sapling output preserved"
+    );
+    assert_eq!(
+        retrieved_block.vtx[0].actions.len(),
+        1,
+        "Orchard action preserved"
+    );
+    assert_eq!(
+        retrieved_block.vtx[0].ironwood_actions.len(),
+        1,
+        "Ironwood action preserved"
+    );
 
     // 2. Verify retrieval of transparent UTXO
     let utxos = storage.get_address_utxos(&t_addr).await.unwrap();
@@ -94,7 +118,11 @@ async fn test_multi_pool_receipt_coverage() {
     assert_eq!(utxos[0].value_zat, 500_000_000);
 
     // 3. Verify tree state preservation for all shielded pools
-    let ts = storage.get_tree_state(BlockHeight(1000)).await.unwrap().unwrap();
+    let ts = storage
+        .get_tree_state(BlockHeight(1000))
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(ts.sapling_tree, "sapling_tree_state_data");
     assert_eq!(ts.orchard_tree, "orchard_tree_state_data");
     assert_eq!(ts.ironwood_tree, "ironwood_tree_state_data");

@@ -1,5 +1,5 @@
 use bridge_core::{BlockHeight, BridgeError};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 
 pub fn execute_reorg_rollback(
     conn: &mut Connection,
@@ -10,8 +10,11 @@ pub fn execute_reorg_rollback(
         .map_err(|e| BridgeError::Storage(format!("Failed to start transaction: {e}")))?;
 
     // 1. Delete rolled back compact blocks
-    tx.execute("DELETE FROM compact_blocks WHERE height >= ?1", params![fork_height.0])
-        .map_err(|e| BridgeError::Storage(e.to_string()))?;
+    tx.execute(
+        "DELETE FROM compact_blocks WHERE height >= ?1",
+        params![fork_height.0],
+    )
+    .map_err(|e| BridgeError::Storage(e.to_string()))?;
 
     // 2. Unspend transparent outputs that were spent at or after fork_height
     tx.execute(

@@ -32,7 +32,9 @@ impl SqliteStorage {
             .map_err(|e| BridgeError::Storage(format!("Failed to open SQLite database: {e}")))?;
         apply_migrations(&mut conn)
             .map_err(|e| BridgeError::Storage(format!("Failed to apply migrations: {e}")))?;
-        Ok(Self { conn: Arc::new(Mutex::new(conn)) })
+        Ok(Self {
+            conn: Arc::new(Mutex::new(conn)),
+        })
     }
 
     pub fn in_memory() -> Result<Self, BridgeError> {
@@ -40,7 +42,9 @@ impl SqliteStorage {
             .map_err(|e| BridgeError::Storage(format!("Failed to open in-memory SQLite: {e}")))?;
         apply_migrations(&mut conn)
             .map_err(|e| BridgeError::Storage(format!("Failed to apply migrations: {e}")))?;
-        Ok(Self { conn: Arc::new(Mutex::new(conn)) })
+        Ok(Self {
+            conn: Arc::new(Mutex::new(conn)),
+        })
     }
 }
 

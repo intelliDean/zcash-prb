@@ -1,5 +1,5 @@
 use bridge_core::{BlockHash, BlockHeight, BridgeError, CoverageMetadata, Network};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 
 pub fn query_coverage_metadata(conn: &Connection) -> Result<Option<CoverageMetadata>, BridgeError> {
     let mut stmt = conn

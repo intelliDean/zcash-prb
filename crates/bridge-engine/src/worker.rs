@@ -10,7 +10,7 @@ use bridge_storage::{
 use bridge_verifier::{validate_block_sequence, verify_transaction};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{watch, Semaphore};
+use tokio::sync::{Semaphore, watch};
 use tracing::{error, info, warn};
 
 pub struct AcquisitionWorker {
@@ -28,7 +28,12 @@ impl AcquisitionWorker {
     ) -> Self {
         let upstream =
             UpstreamClient::new(config.upstream_provider.clone(), config.request_timeout_sec);
-        Self { config, storage, upstream, shutdown_rx }
+        Self {
+            config,
+            storage,
+            upstream,
+            shutdown_rx,
+        }
     }
 
     pub async fn run(mut self) {
@@ -54,13 +59,19 @@ impl AcquisitionWorker {
                         }
                     }
                 }
-                Err(BridgeError::ReorgDetected { height, expected, actual }) => {
+                Err(BridgeError::ReorgDetected {
+                    height,
+                    expected,
+                    actual,
+                }) => {
                     warn!(
                         "Chain reorganization detected at height {}: expected prev_hash {}, got {}. Rolling back...",
                         height, expected, actual
                     );
-                    if let Err(e) =
-                        self.storage.handle_reorg(BlockHeight(height.saturating_sub(1))).await
+                    if let Err(e) = self
+                        .storage
+                        .handle_reorg(BlockHeight(height.saturating_sub(1)))
+                        .await
                     {
                         error!("Failed to handle chain reorganization: {e}");
                         tokio::time::sleep(Duration::from_secs(5)).await;
@@ -68,7 +79,10 @@ impl AcquisitionWorker {
                 }
                 Err(e) => {
                     error!("Error during sync step: {e}. Retrying in 5s...");
-                    let _ = self.storage.record_acquisition_failure(&e.to_string()).await;
+                    let _ = self
+                        .storage
+                        .record_acquisition_failure(&e.to_string())
+                        .await;
                     tokio::select! {
                         _ = tokio::time::sleep(Duration::from_secs(5)) => {},
                         _ = self.shutdown_rx.changed() => {},
@@ -84,7 +98,10 @@ impl AcquisitionWorker {
         {
             let _ = self
                 .storage
-                .init_coverage(self.config.network, BlockHeight(self.config.coverage_start_height))
+                .init_coverage(
+                    self.config.network,
+                    BlockHeight(self.config.coverage_start_height),
+                )
                 .await;
         }
     }
@@ -113,7 +130,9 @@ impl AcquisitionWorker {
         };
 
         // 1. Fetch and validate block sequence
-        let blocks = self.fetch_and_validate_blocks(interval, prev_hash_ref).await?;
+        let blocks = self
+            .fetch_and_validate_blocks(interval, prev_hash_ref)
+            .await?;
 
         // 2. Fetch and cryptographically verify all transactions
         let full_transactions = self.fetch_and_verify_transactions(&blocks).await?;
@@ -123,7 +142,9 @@ impl AcquisitionWorker {
             self.extract_transparent_records(&full_transactions);
 
         // 4. Fetch tree state for interval end
-        let end_block = blocks.last().expect("Interval must contain at least one block");
+        let end_block = blocks
+            .last()
+            .expect("Interval must contain at least one block");
         let end_tree_state = self.fetch_end_tree_state(interval.end, end_block).await;
 
         // 5. Commit verified batch atomically
@@ -144,7 +165,10 @@ impl AcquisitionWorker {
         };
 
         self.storage.commit_verified_interval(batch).await?;
-        info!("Committed verified interval [{}..={}] to disk", interval.start, interval.end);
+        info!(
+            "Committed verified interval [{}..={}] to disk",
+            interval.start, interval.end
+        );
 
         Ok(interval.end < tip_height)
     }
@@ -200,8 +224,10 @@ impl AcquisitionWorker {
             let upstream = self.upstream.clone();
 
             join_handles.push(tokio::spawn(async move {
-                let _permit =
-                    sem.acquire().await.map_err(|e| BridgeError::Upstream(e.to_string()))?;
+                let _permit = sem
+                    .acquire()
+                    .await
+                    .map_err(|e| BridgeError::Upstream(e.to_string()))?;
                 let mut raw_tx = upstream.get_transaction(&txid).await?;
                 raw_tx.height = height as u64;
 
@@ -212,8 +238,9 @@ impl AcquisitionWorker {
 
         let mut full_transactions = Vec::new();
         for h in join_handles {
-            let raw_tx =
-                h.await.map_err(|e| BridgeError::Upstream(format!("Task join failed: {e}")))??;
+            let raw_tx = h
+                .await
+                .map_err(|e| BridgeError::Upstream(format!("Task join failed: {e}")))??;
             full_transactions.push(raw_tx);
         }
 
@@ -266,14 +293,17 @@ impl AcquisitionWorker {
         interval_end: BlockHeight,
         last_block: &CompactBlock,
     ) -> TreeState {
-        self.upstream.get_tree_state(interval_end).await.unwrap_or(TreeState {
-            network: self.config.network.to_string(),
-            height: interval_end.0 as u64,
-            hash: hex::encode(&last_block.hash),
-            time: last_block.time,
-            sapling_tree: String::new(),
-            orchard_tree: String::new(),
-            ironwood_tree: String::new(),
-        })
+        self.upstream
+            .get_tree_state(interval_end)
+            .await
+            .unwrap_or(TreeState {
+                network: self.config.network.to_string(),
+                height: interval_end.0 as u64,
+                hash: hex::encode(&last_block.hash),
+                time: last_block.time,
+                sapling_tree: String::new(),
+                orchard_tree: String::new(),
+                ironwood_tree: String::new(),
+            })
     }
 }

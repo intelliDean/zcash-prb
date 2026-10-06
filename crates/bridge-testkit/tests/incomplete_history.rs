@@ -9,7 +9,10 @@ use std::sync::Arc;
 #[tokio::test]
 async fn test_incomplete_history_returns_failed_precondition() {
     let storage = Arc::new(SqliteStorage::in_memory().unwrap());
-    storage.init_coverage(Network::Mainnet, BlockHeight(5000)).await.unwrap();
+    storage
+        .init_coverage(Network::Mainnet, BlockHeight(5000))
+        .await
+        .unwrap();
 
     let test_addr = TransparentAddress::new("t1TestIncompleteAddress12345");
 

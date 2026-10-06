@@ -2,7 +2,7 @@ use crate::traits::{TransparentOutputRecord, TransparentSpendRecord};
 use bridge_core::{BlockHash, BlockHeight, BridgeError};
 use bridge_proto::{CompactBlock, RawTransaction, TreeState};
 use prost::Message;
-use rusqlite::{params, Transaction};
+use rusqlite::{Transaction, params};
 
 pub fn insert_compact_blocks(tx: &Transaction, blocks: &[CompactBlock]) -> Result<(), BridgeError> {
     let mut stmt = tx
@@ -17,8 +17,15 @@ pub fn insert_compact_blocks(tx: &Transaction, blocks: &[CompactBlock]) -> Resul
         b.encode(&mut proto_bytes)
             .map_err(|e| BridgeError::Storage(format!("Failed to encode block: {e}")))?;
 
-        stmt.execute(params![b.height as u32, b.hash, b.prev_hash, b.time, b.header, proto_bytes,])
-            .map_err(|e| BridgeError::Storage(e.to_string()))?;
+        stmt.execute(params![
+            b.height as u32,
+            b.hash,
+            b.prev_hash,
+            b.time,
+            b.header,
+            proto_bytes,
+        ])
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
     }
     Ok(())
 }
@@ -40,8 +47,13 @@ pub fn insert_full_transactions(
             .personal(b"ZcashTxHash_TEMP")
             .hash(&raw_tx.data);
 
-        stmt.execute(params![tx_hash.as_bytes(), raw_tx.height as u32, 0u32, raw_tx.data,])
-            .map_err(|e| BridgeError::Storage(e.to_string()))?;
+        stmt.execute(params![
+            tx_hash.as_bytes(),
+            raw_tx.height as u32,
+            0u32,
+            raw_tx.data,
+        ])
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
     }
     Ok(())
 }

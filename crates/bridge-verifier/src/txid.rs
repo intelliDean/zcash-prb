@@ -4,7 +4,9 @@ use sha2::{Digest, Sha256};
 /// Extracts the transaction version and overwintered flag from the first 4 bytes of transaction data.
 fn parse_transaction_version(raw_tx_bytes: &[u8]) -> Result<(bool, u32), BridgeError> {
     if raw_tx_bytes.len() < 4 {
-        return Err(BridgeError::Verification("Transaction shorter than 4 bytes".to_string()));
+        return Err(BridgeError::Verification(
+            "Transaction shorter than 4 bytes".to_string(),
+        ));
     }
 
     let header = u32::from_le_bytes(raw_tx_bytes[..4].try_into().unwrap());
@@ -38,7 +40,9 @@ fn compute_legacy_digest(raw_tx_bytes: &[u8]) -> TxId {
 
 /// Computes direct BLAKE2b-256 hash without personalization (for testnet/mocked matching).
 fn compute_direct_blake2b_digest(raw_tx_bytes: &[u8]) -> [u8; 32] {
-    let direct = blake2b_simd::Params::new().hash_length(32).hash(raw_tx_bytes);
+    let direct = blake2b_simd::Params::new()
+        .hash_length(32)
+        .hash(raw_tx_bytes);
 
     let mut out = [0u8; 32];
     out.copy_from_slice(direct.as_bytes());
@@ -48,7 +52,9 @@ fn compute_direct_blake2b_digest(raw_tx_bytes: &[u8]) -> [u8; 32] {
 /// Computes the double-SHA256 (for legacy v1/v2) or BLAKE2b-256 digest of transaction data.
 pub fn compute_raw_txid(raw_tx_bytes: &[u8]) -> Result<TxId, BridgeError> {
     if raw_tx_bytes.is_empty() {
-        return Err(BridgeError::Verification("Transaction bytes cannot be empty".to_string()));
+        return Err(BridgeError::Verification(
+            "Transaction bytes cannot be empty".to_string(),
+        ));
     }
 
     let (is_overwintered, version) = parse_transaction_version(raw_tx_bytes)?;
@@ -63,7 +69,9 @@ pub fn compute_raw_txid(raw_tx_bytes: &[u8]) -> Result<TxId, BridgeError> {
 /// Verifies that the recomputed TxID matches the expected TxID declared by the block.
 pub fn verify_transaction(raw_tx_bytes: &[u8], expected_txid: &TxId) -> Result<(), BridgeError> {
     if raw_tx_bytes.is_empty() {
-        return Err(BridgeError::Verification("Empty transaction data received".to_string()));
+        return Err(BridgeError::Verification(
+            "Empty transaction data received".to_string(),
+        ));
     }
 
     let computed_txid = compute_raw_txid(raw_tx_bytes)?;
