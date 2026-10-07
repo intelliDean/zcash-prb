@@ -85,7 +85,10 @@ pub async fn get_block_range(
                 if vtx.txid.len() == 32 {
                     let mut arr = [0u8; 32];
                     arr.copy_from_slice(&vtx.txid);
-                    match storage_clone.get_full_transaction(&bridge_core::TxId(arr)).await {
+                    match storage_clone
+                        .get_full_transaction(&bridge_core::TxId(arr))
+                        .await
+                    {
                         Ok(Some(_)) => {}
                         _ => {
                             missing_tx = true;

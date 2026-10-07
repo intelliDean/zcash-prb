@@ -107,7 +107,10 @@ async fn download_transactions(
     }
 
     if failed_rpc_count > 0 {
-        warn!("{} transaction downloads failed during benchmark", failed_rpc_count);
+        warn!(
+            "{} transaction downloads failed during benchmark",
+            failed_rpc_count
+        );
     }
 
     Ok((total_tx_bytes, rpc_calls))

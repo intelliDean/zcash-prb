@@ -12,7 +12,9 @@ pub fn compute_raw_txid(raw_tx_bytes: &[u8]) -> Result<TxId, BridgeError> {
     }
 
     let tx = Transaction::zcash_deserialize(raw_tx_bytes).map_err(|e| {
-        BridgeError::Verification(format!("TxID verification failed: failed to parse consensus transaction: {e}"))
+        BridgeError::Verification(format!(
+            "TxID verification failed: failed to parse consensus transaction: {e}"
+        ))
     })?;
 
     Ok(TxId(tx.hash().0))
