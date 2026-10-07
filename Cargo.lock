@@ -452,6 +452,7 @@ dependencies = [
  "bridge-proto",
  "bridge-storage",
  "bridge-verifier",
+ "hex",
  "prost",
  "thiserror",
  "tokio",

@@ -46,6 +46,21 @@ impl SqliteStorage {
             conn: Arc::new(Mutex::new(conn)),
         })
     }
+
+    /// Simulates data corruption or bit-rot for test fixtures and cache protection audits.
+    pub fn tamper_transaction_raw(
+        &self,
+        txid: &bridge_core::TxId,
+        corrupted_data: Vec<u8>,
+    ) -> Result<(), BridgeError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE full_transactions SET raw_data = ?1 WHERE txid = ?2",
+            rusqlite::params![corrupted_data, &txid.0[..]],
+        )
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
+        Ok(())
+    }
 }
 
 #[async_trait]
