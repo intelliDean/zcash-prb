@@ -1,4 +1,4 @@
-use bridge_core::{BlockHeight, Network, TxId};
+use bridge_core::{BlockHeight, Network};
 use bridge_proto::{
     CompactBlock, CompactOrchardAction, CompactSaplingOutput, CompactSaplingSpend, CompactTx,
     RawTransaction,
@@ -17,14 +17,9 @@ async fn test_multi_pool_receipt_coverage() {
         .await
         .unwrap();
 
-    let tx_data = vec![0x04, 0x00, 0x00, 0x80, 0x01, 0x02];
-    let tx_hash = blake2b_simd::Params::new()
-        .hash_length(32)
-        .personal(b"ZcashTxHash_TEMP")
-        .hash(&tx_data);
-    let mut txid_arr = [0u8; 32];
-    txid_arr.copy_from_slice(tx_hash.as_bytes());
-    let txid = TxId(txid_arr);
+    let tx_data = hex::decode("030000807082c4030002e7719811893e0000095200ac6551ac636565b2835a0805750200025151481cdd86b3cc431800").unwrap();
+    let txid = bridge_verifier::compute_raw_txid(&tx_data).unwrap();
+    let txid_arr = txid.0;
 
     // Construct block with Sapling outputs, Orchard actions, and Ironwood actions
     let block = CompactBlock {

@@ -32,6 +32,13 @@ pub fn execute_reorg_rollback(
     )
     .map_err(|e| BridgeError::Storage(e.to_string()))?;
 
+    // 4. Delete subtree roots completing at or after fork_height
+    tx.execute(
+        "DELETE FROM subtree_roots WHERE completing_height >= ?1",
+        params![fork_height.0],
+    )
+    .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
     // 4. Recompute latest committed block
     let new_latest: Option<(u32, Vec<u8>)> = tx
         .query_row(

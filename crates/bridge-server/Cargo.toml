@@ -8,6 +8,7 @@ license.workspace = true
 bridge-core = { workspace = true }
 bridge-proto = { workspace = true }
 bridge-storage = { workspace = true }
+bridge-verifier = { workspace = true }
 tonic = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }

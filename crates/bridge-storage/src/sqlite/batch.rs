@@ -2,7 +2,7 @@ use crate::traits::{TransparentOutputRecord, TransparentSpendRecord};
 use bridge_core::{BlockHash, BlockHeight, BridgeError};
 use bridge_proto::{CompactBlock, RawTransaction, TreeState};
 use prost::Message;
-use rusqlite::{Transaction, params};
+use rusqlite::{OptionalExtension, Transaction, params};
 
 pub fn insert_compact_blocks(tx: &Transaction, blocks: &[CompactBlock]) -> Result<(), BridgeError> {
     let mut stmt = tx
@@ -33,7 +33,7 @@ pub fn insert_compact_blocks(tx: &Transaction, blocks: &[CompactBlock]) -> Resul
 pub fn insert_full_transactions(
     tx: &Transaction,
     transactions: &[RawTransaction],
-    blocks: &[CompactBlock],
+    _blocks: &[CompactBlock],
 ) -> Result<(), BridgeError> {
     let mut stmt = tx
         .prepare(
@@ -43,38 +43,11 @@ pub fn insert_full_transactions(
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
 
     for raw_tx in transactions {
-        let txid_bytes: [u8; 32] = match bridge_verifier::compute_raw_txid(&raw_tx.data) {
-            Ok(txid) => txid.0,
-            Err(_) => {
-                let block_txid = blocks
-                    .iter()
-                    .find(|b| b.height == raw_tx.height)
-                    .and_then(|b| {
-                        b.vtx.iter().find_map(|v| {
-                            if v.txid.len() == 32 {
-                                let mut arr = [0u8; 32];
-                                arr.copy_from_slice(&v.txid);
-                                Some(arr)
-                            } else {
-                                None
-                            }
-                        })
-                    });
-
-                block_txid.unwrap_or_else(|| {
-                    let hash = blake2b_simd::Params::new()
-                        .hash_length(32)
-                        .personal(b"ZcashTxHash_TEMP")
-                        .hash(&raw_tx.data);
-                    let mut arr = [0u8; 32];
-                    arr.copy_from_slice(hash.as_bytes());
-                    arr
-                })
-            }
-        };
+        // Enforce strict consensus deserialization without fallback
+        let txid = bridge_verifier::compute_raw_txid(&raw_tx.data)?;
 
         stmt.execute(params![
-            &txid_bytes[..],
+            &txid.0[..],
             raw_tx.height as u32,
             0u32,
             raw_tx.data,
@@ -91,21 +64,48 @@ pub fn insert_subtree_roots(
     if roots.is_empty() {
         return Ok(());
     }
-    let mut stmt = tx
+
+    let mut check_stmt = tx
+        .prepare("SELECT subtree_index FROM subtree_roots WHERE pool = ?1 AND root_hash = ?2")
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
+    let mut next_idx_stmt = tx
+        .prepare("SELECT COALESCE(MAX(subtree_index) + 1, 0) FROM subtree_roots WHERE pool = ?1")
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
+    let mut insert_stmt = tx
         .prepare(
-            "INSERT OR REPLACE INTO subtree_roots (pool, subtree_index, root_hash, completing_height)
-             VALUES (?1, ?2, ?3, ?4)",
+            "INSERT OR REPLACE INTO subtree_roots (pool, subtree_index, root_hash, completing_block_hash, completing_height)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
         )
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
 
-    for (idx, r) in roots.iter().enumerate() {
-        stmt.execute(params![
-            0i32,
-            idx as u32,
-            r.root_hash,
-            r.completing_block_height as u32,
-        ])
-        .map_err(|e| BridgeError::Storage(e.to_string()))?;
+    for r in roots {
+        let pool = 0i32;
+        let existing_idx: Option<u32> = check_stmt
+            .query_row(params![pool, &r.root_hash], |row| row.get(0))
+            .optional()
+            .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
+        let idx = match existing_idx {
+            Some(i) => i,
+            None => {
+                let next: u32 = next_idx_stmt
+                    .query_row(params![pool], |row| row.get(0))
+                    .map_err(|e| BridgeError::Storage(e.to_string()))?;
+                next
+            }
+        };
+
+        insert_stmt
+            .execute(params![
+                pool,
+                idx,
+                r.root_hash,
+                r.completing_block_hash,
+                r.completing_block_height as u32,
+            ])
+            .map_err(|e| BridgeError::Storage(e.to_string()))?;
     }
     Ok(())
 }

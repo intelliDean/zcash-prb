@@ -30,6 +30,14 @@ pub async fn get_transaction(
             ))
         })?;
 
+    // Strict cache integrity check: verify transaction payload matches requested TxID
+    bridge_verifier::verify_transaction(&raw_tx.data, &txid).map_err(|e| {
+        Status::data_loss(format!(
+            "Corrupted full transaction in cache for txid {}: {}",
+            txid, e
+        ))
+    })?;
+
     Ok(Response::new(raw_tx))
 }
 

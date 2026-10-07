@@ -11,11 +11,20 @@ pub fn compute_raw_txid(raw_tx_bytes: &[u8]) -> Result<TxId, BridgeError> {
         ));
     }
 
-    let tx = Transaction::zcash_deserialize(raw_tx_bytes).map_err(|e| {
+    let mut cursor = std::io::Cursor::new(raw_tx_bytes);
+    let tx = Transaction::zcash_deserialize(&mut cursor).map_err(|e| {
         BridgeError::Verification(format!(
             "TxID verification failed: failed to parse consensus transaction: {e}"
         ))
     })?;
+
+    if cursor.position() as usize != raw_tx_bytes.len() {
+        return Err(BridgeError::Verification(format!(
+            "TxID verification failed: trailing unconsumed garbage bytes (consumed {} of {} bytes)",
+            cursor.position(),
+            raw_tx_bytes.len()
+        )));
+    }
 
     Ok(TxId(tx.hash().0))
 }
@@ -67,5 +76,14 @@ mod tests {
         let bad_tx = vec![0x04, 0x00, 0x00, 0x80];
         let wrong_txid = TxId([0x00; 32]);
         assert!(verify_transaction(&bad_tx, &wrong_txid).is_err());
+    }
+
+    #[test]
+    fn test_verify_transaction_trailing_garbage() {
+        let mut valid_tx = hex::decode(VALID_TX_HEX).unwrap();
+        valid_tx.extend_from_slice(&[0xff, 0xaa, 0x55]);
+        let wrong_txid = TxId([0x00; 32]);
+        assert!(verify_transaction(&valid_tx, &wrong_txid).is_err());
+        assert!(compute_raw_txid(&valid_tx).is_err());
     }
 }

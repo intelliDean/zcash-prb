@@ -119,14 +119,14 @@ impl CompactTxStreamer for BridgeGrpcService {
         &self,
         request: Request<GetMempoolTxRequest>,
     ) -> Result<Response<Self::GetMempoolTxStream>, Status> {
-        mempool::get_mempool_tx(request)
+        mempool::get_mempool_tx(&self.storage, request).await
     }
 
     async fn get_mempool_stream(
         &self,
         request: Request<Empty>,
     ) -> Result<Response<Self::GetMempoolStreamStream>, Status> {
-        mempool::get_mempool_stream(request)
+        mempool::get_mempool_stream(&self.storage, request).await
     }
 
     async fn get_tree_state(

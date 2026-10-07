@@ -451,6 +451,7 @@ dependencies = [
  "bridge-core",
  "bridge-proto",
  "bridge-storage",
+ "bridge-verifier",
  "prost",
  "thiserror",
  "tokio",

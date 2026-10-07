@@ -24,6 +24,50 @@ pub async fn get_latest_block(
     }))
 }
 
+pub async fn verify_block_integrity(
+    storage: &Arc<dyn StorageBackend>,
+    block: &CompactBlock,
+) -> Result<(), Status> {
+    if block.hash.len() != 32 {
+        return Err(Status::data_loss(format!(
+            "Corrupted block hash in cache for block {}",
+            block.height
+        )));
+    }
+
+    for vtx in &block.vtx {
+        if vtx.txid.len() != 32 {
+            return Err(Status::data_loss(format!(
+                "Malformed transaction ID in block {}",
+                block.height
+            )));
+        }
+        let mut arr = [0u8; 32];
+        arr.copy_from_slice(&vtx.txid);
+        let txid = bridge_core::TxId(arr);
+        match storage.get_full_transaction(&txid).await {
+            Ok(Some(raw_tx)) => {
+                bridge_verifier::verify_transaction(&raw_tx.data, &txid).map_err(|e| {
+                    Status::data_loss(format!(
+                        "Corrupted transaction {} in cache for block {}: {}",
+                        txid, block.height, e
+                    ))
+                })?;
+            }
+            Ok(None) => {
+                return Err(Status::data_loss(format!(
+                    "Referenced full transaction missing for block {}",
+                    block.height
+                )));
+            }
+            Err(e) => {
+                return Err(Status::internal(e.to_string()));
+            }
+        }
+    }
+    Ok(())
+}
+
 pub async fn get_block(
     storage: &Arc<dyn StorageBackend>,
     request: Request<BlockId>,
@@ -41,6 +85,8 @@ pub async fn get_block(
                 height.0
             ))
         })?;
+
+    verify_block_integrity(storage, &block).await?;
 
     Ok(Response::new(block))
 }
@@ -80,31 +126,8 @@ pub async fn get_block_range(
         let is_incomplete = blocks.len() != expected_count;
 
         for block in blocks {
-            let mut missing_tx = false;
-            for vtx in &block.vtx {
-                if vtx.txid.len() == 32 {
-                    let mut arr = [0u8; 32];
-                    arr.copy_from_slice(&vtx.txid);
-                    match storage_clone
-                        .get_full_transaction(&bridge_core::TxId(arr))
-                        .await
-                    {
-                        Ok(Some(_)) => {}
-                        _ => {
-                            missing_tx = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if missing_tx {
-                let _ = tx
-                    .send(Err(Status::data_loss(format!(
-                        "Referenced full transaction missing for block {}",
-                        block.height
-                    ))))
-                    .await;
+            if let Err(status) = verify_block_integrity(&storage_clone, &block).await {
+                let _ = tx.send(Err(status)).await;
                 return;
             }
 
@@ -115,8 +138,8 @@ pub async fn get_block_range(
 
         if is_incomplete {
             let _ = tx
-                .send(Err(Status::failed_precondition(
-                    "Incomplete coverage for requested block range",
+                .send(Err(Status::data_loss(
+                    "Incomplete coverage or missing blocks for requested block range",
                 )))
                 .await;
         }

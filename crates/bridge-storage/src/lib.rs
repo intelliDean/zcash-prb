@@ -54,17 +54,14 @@ mod tests {
             chain_metadata: None,
         };
 
+        let tx_data = hex::decode("030000807082c4030002e7719811893e0000095200ac6551ac636565b2835a0805750200025151481cdd86b3cc431800").unwrap();
         let raw_tx = RawTransaction {
-            data: vec![0xde, 0xad, 0xbe, 0xef],
+            data: tx_data,
             height: 100,
         };
 
-        let tx_hash = blake2b_simd::Params::new()
-            .hash_length(32)
-            .personal(b"ZcashTxHash_TEMP")
-            .hash(&raw_tx.data);
-        let mut tx_arr = [0u8; 32];
-        tx_arr.copy_from_slice(tx_hash.as_bytes());
+        let tx_id = bridge_verifier::compute_raw_txid(&raw_tx.data).unwrap();
+        let tx_arr = tx_id.0;
 
         let out = TransparentOutputRecord {
             txid: TxId(tx_arr),
@@ -148,5 +145,80 @@ mod tests {
         let (latest_h, latest_hash) = storage.get_latest_block().await.unwrap().unwrap();
         assert_eq!(latest_h, BlockHeight(100));
         assert_eq!(latest_hash, BlockHash([1u8; 32]));
+    }
+
+    #[tokio::test]
+    async fn test_subtree_roots_multibatch_and_reorg() {
+        let storage = SqliteStorage::in_memory().expect("in-memory db failed");
+        storage
+            .init_coverage(Network::Mainnet, BlockHeight(100))
+            .await
+            .unwrap();
+
+        let root1 = bridge_proto::SubtreeRoot {
+            root_hash: vec![0x11; 32],
+            completing_block_hash: vec![0xaa; 32],
+            completing_block_height: 100,
+        };
+        let b1 = CompactBlock {
+            height: 100,
+            hash: vec![0xaa; 32],
+            prev_hash: vec![0u8; 32],
+            time: 1700000000,
+            header: vec![0; 80],
+            vtx: vec![],
+            chain_metadata: None,
+        };
+        let batch1 = VerifiedIntervalBatch {
+            blocks: vec![b1],
+            transactions: vec![],
+            tree_states: vec![],
+            subtree_roots: vec![root1],
+            transparent_outputs: vec![],
+            transparent_spends: vec![],
+            end_height: BlockHeight(100),
+            end_block_hash: BlockHash([0xaa; 32]),
+        };
+        storage.commit_verified_interval(batch1).await.unwrap();
+
+        let root2 = bridge_proto::SubtreeRoot {
+            root_hash: vec![0x22; 32],
+            completing_block_hash: vec![0xbb; 32],
+            completing_block_height: 101,
+        };
+        let b2 = CompactBlock {
+            height: 101,
+            hash: vec![0xbb; 32],
+            prev_hash: vec![0xaa; 32],
+            time: 1700000075,
+            header: vec![0; 80],
+            vtx: vec![],
+            chain_metadata: None,
+        };
+        let batch2 = VerifiedIntervalBatch {
+            blocks: vec![b2],
+            transactions: vec![],
+            tree_states: vec![],
+            subtree_roots: vec![root2],
+            transparent_outputs: vec![],
+            transparent_spends: vec![],
+            end_height: BlockHeight(101),
+            end_block_hash: BlockHash([0xbb; 32]),
+        };
+        storage.commit_verified_interval(batch2).await.unwrap();
+
+        // Verify both roots preserved across batches
+        let roots = storage.get_subtree_roots(0, 0, 10).await.unwrap();
+        assert_eq!(roots.len(), 2);
+        assert_eq!(roots[0].root_hash, vec![0x11; 32]);
+        assert_eq!(roots[0].completing_block_hash, vec![0xaa; 32]);
+        assert_eq!(roots[1].root_hash, vec![0x22; 32]);
+        assert_eq!(roots[1].completing_block_hash, vec![0xbb; 32]);
+
+        // Reorg back block 101
+        storage.handle_reorg(BlockHeight(101)).await.unwrap();
+        let roots_after = storage.get_subtree_roots(0, 0, 10).await.unwrap();
+        assert_eq!(roots_after.len(), 1);
+        assert_eq!(roots_after[0].root_hash, vec![0x11; 32]);
     }
 }

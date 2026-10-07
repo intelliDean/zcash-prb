@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS subtree_roots (
     pool INTEGER NOT NULL,
     subtree_index INTEGER NOT NULL,
     root_hash BLOB NOT NULL,
+    completing_block_hash BLOB NOT NULL,
     completing_height INTEGER NOT NULL,
     PRIMARY KEY(pool, subtree_index)
 );
@@ -94,6 +95,10 @@ pub fn apply_migrations(conn: &mut Connection) -> Result<(), rusqlite::Error> {
     );
     let _ = conn.execute(
         "ALTER TABLE coverage_metadata ADD COLUMN last_error TEXT NULL",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE subtree_roots ADD COLUMN completing_block_hash BLOB NOT NULL DEFAULT x''",
         [],
     );
 

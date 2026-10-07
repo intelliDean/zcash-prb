@@ -127,7 +127,7 @@ pub fn query_subtree_roots(
 ) -> Result<Vec<SubtreeRoot>, BridgeError> {
     let mut stmt = conn
         .prepare(
-            "SELECT root_hash, completing_height FROM subtree_roots 
+            "SELECT root_hash, completing_block_hash, completing_height FROM subtree_roots 
              WHERE pool = ?1 AND subtree_index >= ?2 
              ORDER BY subtree_index ASC LIMIT ?3",
         )
@@ -136,11 +136,12 @@ pub fn query_subtree_roots(
     let rows = stmt
         .query_map(params![pool, start_index, max_entries], |row| {
             let root_hash: Vec<u8> = row.get(0)?;
-            let completing_h: u32 = row.get(1)?;
+            let completing_block_hash: Vec<u8> = row.get(1)?;
+            let completing_h: u32 = row.get(2)?;
             Ok(SubtreeRoot {
                 root_hash,
                 completing_block_height: completing_h as u64,
-                completing_block_hash: vec![],
+                completing_block_hash,
             })
         })
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
