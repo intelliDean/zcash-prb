@@ -17,14 +17,20 @@ pub fn create_test_compact_block(
     }
 }
 
-/// Creates a test transaction with computed ZIP 244 temporary BLAKE2b digest.
+/// Creates a test transaction with computed consensus or ZIP 244 temporary BLAKE2b digest.
 pub fn create_test_tx(data: Vec<u8>, height: u64) -> (RawTransaction, [u8; 32]) {
-    let hash = blake2b_simd::Params::new()
-        .hash_length(32)
-        .personal(b"ZcashTxHash_TEMP")
-        .hash(&data);
-    let mut txid = [0u8; 32];
-    txid.copy_from_slice(hash.as_bytes());
+    let txid = match bridge_verifier::compute_raw_txid(&data) {
+        Ok(id) => id.0,
+        Err(_) => {
+            let hash = blake2b_simd::Params::new()
+                .hash_length(32)
+                .personal(b"ZcashTxHash_TEMP")
+                .hash(&data);
+            let mut txid = [0u8; 32];
+            txid.copy_from_slice(hash.as_bytes());
+            txid
+        }
+    };
 
     (RawTransaction { data, height }, txid)
 }

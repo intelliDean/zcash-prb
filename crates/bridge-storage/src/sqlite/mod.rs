@@ -191,10 +191,11 @@ impl StorageBackend for SqliteStorage {
                 .map_err(|e| BridgeError::Storage(format!("Failed to start transaction: {e}")))?;
 
             batch::insert_compact_blocks(&tx, &batch.blocks)?;
-            batch::insert_full_transactions(&tx, &batch.transactions)?;
+            batch::insert_full_transactions(&tx, &batch.transactions, &batch.blocks)?;
             batch::insert_transparent_outputs(&tx, &batch.transparent_outputs)?;
             batch::resolve_transparent_spends(&tx, &batch.transparent_spends)?;
             batch::insert_tree_states(&tx, &batch.tree_states)?;
+            batch::insert_subtree_roots(&tx, &batch.subtree_roots)?;
             batch::update_coverage_checkpoint(&tx, batch.end_height, &batch.end_block_hash)?;
 
             tx.commit().map_err(|e| {

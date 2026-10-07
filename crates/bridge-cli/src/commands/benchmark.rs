@@ -89,20 +89,25 @@ async fn download_transactions(
     client: &UpstreamClient,
     full_txids: &[TxId],
 ) -> Result<(usize, usize)> {
-    println!("\n3. Downloading Full Transactions in Bulk...");
     let mut total_tx_bytes = 0usize;
     let mut rpc_calls = 0usize;
+    let mut failed_rpc_count = 0usize;
 
     for txid in full_txids {
+        rpc_calls += 1;
         match client.get_transaction(txid).await {
             Ok(raw_tx) => {
-                rpc_calls += 1;
                 total_tx_bytes += raw_tx.data.len();
             }
             Err(e) => {
+                failed_rpc_count += 1;
                 warn!("Transaction download failed for {}: {}", txid, e);
             }
         }
+    }
+
+    if failed_rpc_count > 0 {
+        warn!("{} transaction downloads failed during benchmark", failed_rpc_count);
     }
 
     Ok((total_tx_bytes, rpc_calls))
@@ -130,6 +135,6 @@ fn print_summary(
         (block_bytes + tx_bytes) as f64 / 1024.0
     );
     println!(
-        "Repeat-Sync Savings:       100% (Subsequent queries served locally with 0 upstream RPCs)"
+        "Repeat-Sync Upstream Offload: 100% (Cached ranges served locally with 0 upstream RPCs)"
     );
 }

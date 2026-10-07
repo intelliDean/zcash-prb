@@ -208,11 +208,16 @@ impl AcquisitionWorker {
         let mut txids_to_fetch = Vec::new();
         for b in blocks {
             for vtx in &b.vtx {
-                if vtx.txid.len() == 32 {
-                    let mut arr = [0u8; 32];
-                    arr.copy_from_slice(&vtx.txid);
-                    txids_to_fetch.push((TxId(arr), b.height as u32));
+                if vtx.txid.len() != 32 {
+                    return Err(BridgeError::Verification(format!(
+                        "Compact block at height {} declared malformed txid of length {} (expected 32)",
+                        b.height,
+                        vtx.txid.len()
+                    )));
                 }
+                let mut arr = [0u8; 32];
+                arr.copy_from_slice(&vtx.txid);
+                txids_to_fetch.push((TxId(arr), b.height as u32));
             }
         }
 

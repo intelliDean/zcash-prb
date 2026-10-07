@@ -33,6 +33,7 @@ pub fn insert_compact_blocks(tx: &Transaction, blocks: &[CompactBlock]) -> Resul
 pub fn insert_full_transactions(
     tx: &Transaction,
     transactions: &[RawTransaction],
+    blocks: &[CompactBlock],
 ) -> Result<(), BridgeError> {
     let mut stmt = tx
         .prepare(
@@ -42,16 +43,67 @@ pub fn insert_full_transactions(
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
 
     for raw_tx in transactions {
-        let tx_hash = blake2b_simd::Params::new()
-            .hash_length(32)
-            .personal(b"ZcashTxHash_TEMP")
-            .hash(&raw_tx.data);
+        let txid_bytes: [u8; 32] = match bridge_verifier::compute_raw_txid(&raw_tx.data) {
+            Ok(txid) => txid.0,
+            Err(_) => {
+                let block_txid = blocks
+                    .iter()
+                    .find(|b| b.height == raw_tx.height)
+                    .and_then(|b| {
+                        b.vtx.iter().find_map(|v| {
+                            if v.txid.len() == 32 {
+                                let mut arr = [0u8; 32];
+                                arr.copy_from_slice(&v.txid);
+                                Some(arr)
+                            } else {
+                                None
+                            }
+                        })
+                    });
+
+                block_txid.unwrap_or_else(|| {
+                    let hash = blake2b_simd::Params::new()
+                        .hash_length(32)
+                        .personal(b"ZcashTxHash_TEMP")
+                        .hash(&raw_tx.data);
+                    let mut arr = [0u8; 32];
+                    arr.copy_from_slice(hash.as_bytes());
+                    arr
+                })
+            }
+        };
 
         stmt.execute(params![
-            tx_hash.as_bytes(),
+            &txid_bytes[..],
             raw_tx.height as u32,
             0u32,
             raw_tx.data,
+        ])
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
+    }
+    Ok(())
+}
+
+pub fn insert_subtree_roots(
+    tx: &Transaction,
+    roots: &[bridge_proto::SubtreeRoot],
+) -> Result<(), BridgeError> {
+    if roots.is_empty() {
+        return Ok(());
+    }
+    let mut stmt = tx
+        .prepare(
+            "INSERT OR REPLACE INTO subtree_roots (pool, subtree_index, root_hash, completing_height)
+             VALUES (?1, ?2, ?3, ?4)",
+        )
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
+    for (idx, r) in roots.iter().enumerate() {
+        stmt.execute(params![
+            0i32,
+            idx as u32,
+            r.root_hash,
+            r.completing_block_height as u32,
         ])
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
     }

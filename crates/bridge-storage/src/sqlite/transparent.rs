@@ -8,10 +8,10 @@ pub fn query_address_utxos(
 ) -> Result<Vec<GetAddressUtxosReply>, BridgeError> {
     let addr_str = address.as_str().to_string();
 
-    // Check if this address has unresolved pre-coverage spends
+    // Check if this address or general coverage has unresolved pre-coverage spends
     let has_pre_coverage_spend: bool = conn
         .query_row(
-            "SELECT 1 FROM pre_coverage_spends WHERE address = ?1 LIMIT 1",
+            "SELECT 1 FROM pre_coverage_spends WHERE address = ?1 OR address IS NULL LIMIT 1",
             params![addr_str],
             |_| Ok(true),
         )

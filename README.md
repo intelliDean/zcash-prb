@@ -97,7 +97,7 @@ Private Receive Bridge Model:
                                       ▼
                      ┌──────────────────────────────────┐
                      │ Cryptographic Verifier           │
-                     │ ├─ BLAKE2b / ZIP 244 TxID Hash   │
+                     │ ├─ Consensus TxID (v5 / v1-v4)   │
                      │ ├─ Block Height Continuity       │
                      │ └─ prev_hash Adjacency & Reorgs  │
                      └────────────────┬─────────────────┘
@@ -122,7 +122,7 @@ Private Receive Bridge Model:
                      ┌──────────────────────────────────┐
                      │ Strict RPC Policy Engine         │
                      │ ├─ Confirmed-only profile        │
-                     │ ├─ Mempool queries: UNIMPLEMENTED│
+                     │ ├─ Mempool: Quiet held stream    │
                      │ └─ Broadcasts: PERMISSION_DENIED │
                      └────────────────┬─────────────────┘
                                       │
@@ -147,9 +147,9 @@ Private Receive Bridge Model:
 
 1. **Zero Selective Upstream Leakage:** Upstream observers only observe sequential downloads of public intervals $[H, H + N]$. Wallet-selected requests and cancellations **never** trigger upstream requests.
 2. **Zero-Key Invariant:** The daemon never accepts, requires, stores, or processes seeds, private keys, spending keys, or viewing keys. Note decryption remains strictly inside the wallet.
-3. **Cryptographic Tamper Resistance:** Every transaction is recomputed using ZIP 244 consensus rules and matched against block commitments. Poisoned or corrupted upstream transactions are rejected before committing.
-4. **Strict Localhost Isolation:** The gRPC server binds strictly to loopback addresses (`127.0.0.1` / `::1`), validated at startup. Remote LAN devices cannot access the service.
-5. **Confirmed-Only Profile (No Fabricated Mempool):** To prevent wallets from falsely assuming broadcasted transactions are confirmed, mempool streams explicitly return `UNIMPLEMENTED`. Outbound broadcasts return `PERMISSION_DENIED` in the receive-only MVP.
+3. **Cryptographic Tamper Resistance:** Every transaction is recomputed using strict Zcash consensus deserialization rules (ZIP 244 for v5, SHA-256d for v1–v4 via `zebra-chain`) and matched against block commitments. Corrupted, malformed, or synthetic transactions are rejected before committing.
+4. **Strict Localhost Isolation:** The gRPC server binds strictly to loopback addresses (`127.0.0.1` / `::1`), validated at startup. Remote LAN devices cannot access the service. Upstream HTTPS connections enforce WebPKI TLS certificate verification.
+5. **Confirmed-Only Profile (No Fabricated Mempool):** To prevent wallets from falsely assuming broadcasted transactions are confirmed while avoiding client sync crashes, mempool streams open quiet held streams that emit no unconfirmed transactions. Outbound broadcasts return `PERMISSION_DENIED` in the receive-only MVP.
 
 ---
 
@@ -297,7 +297,7 @@ For complete client verification and direct-vs-bridge parity testing, refer to t
 | `GetSubtreeRoots` | Subtree commitments | **None** | Local shielded tree indices |
 | `GetAddressUtxos` | Transparent UTXO set | **None** | Error on incomplete pre-coverage history |
 | `GetTaddressTransactions`| Transparent address records | **None** | Indexed locally from public intervals |
-| `GetMempoolTx` / `Stream`| `UNIMPLEMENTED` | **None** | Confirmed-only profile (no fake mempool) |
+| `GetMempoolTx` / `Stream`| Quiet held stream | **None** | Confirmed-only profile (no unconfirmed leakage) |
 | `SendTransaction` | `PERMISSION_DENIED` | **None** | Outbound broadcasts blocked in receive MVP |
 
 ---
@@ -335,7 +335,7 @@ Transactions Fetched: 34 full transactions
 Tx Ingress:           142.10 KB
 Total Network Data:   170.55 KB
 Throughput:           11.87 blocks/sec
-Repeat Sync Savings:  100% (served instantly from local SQLite)
+Repeat-Sync Upstream Offload: 100% (Cached ranges served locally with 0 upstream RPCs)
 ```
 
 ---
@@ -349,7 +349,7 @@ crates/
 ├── bridge-core        Domain primitives, types (TxId, BlockHash), configuration, and redaction
 ├── bridge-proto       Protobuf code generation (CompactTxStreamer) via tonic & prost
 ├── bridge-storage     SQLite WAL storage backend, migrations, and query interfaces
-├── bridge-verifier    Consensus TxID recomputation (ZIP 244 BLAKE2b) and adjacency validation
+├── bridge-verifier    Consensus TxID recomputation (ZIP 244 v5 & SHA-256d v1-v4) and adjacency validation
 ├── bridge-engine      Autonomous interval scheduler and upstream client acquisition worker
 ├── bridge-server      Local CompactTxStreamer gRPC service implementing strict RPC policy
 ├── bridge-cli         zcash-private-bridge CLI dispatcher and daemon PID management

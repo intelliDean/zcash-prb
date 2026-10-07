@@ -43,5 +43,6 @@ async fn test_incomplete_history_returns_failed_precondition() {
     });
 
     let res = service.get_address_utxos(utxo_req).await;
-    assert!(res.is_ok());
+    assert!(res.is_err());
+    assert_eq!(res.unwrap_err().code(), tonic::Code::FailedPrecondition);
 }

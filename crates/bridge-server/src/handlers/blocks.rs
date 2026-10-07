@@ -60,17 +60,62 @@ pub async fn get_block_range(
     let start = BlockHeight(start_id.height as u32);
     let end = BlockHeight(end_id.height as u32);
 
+    if start.0 > end.0 {
+        return Err(Status::invalid_argument(
+            "start height cannot exceed end height",
+        ));
+    }
+
+    let expected_count = (end.0 - start.0 + 1) as usize;
+
     let blocks = storage
         .get_compact_block_range(start, end)
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
 
-    let (tx, rx) = tokio::sync::mpsc::channel(blocks.len().max(1));
+    let storage_clone = storage.clone();
+    let (tx, rx) = tokio::sync::mpsc::channel(blocks.len().max(1) + 1);
+
     tokio::spawn(async move {
+        let is_incomplete = blocks.len() != expected_count;
+
         for block in blocks {
-            if tx.send(Ok(block)).await.is_err() {
-                break;
+            let mut missing_tx = false;
+            for vtx in &block.vtx {
+                if vtx.txid.len() == 32 {
+                    let mut arr = [0u8; 32];
+                    arr.copy_from_slice(&vtx.txid);
+                    match storage_clone.get_full_transaction(&bridge_core::TxId(arr)).await {
+                        Ok(Some(_)) => {}
+                        _ => {
+                            missing_tx = true;
+                            break;
+                        }
+                    }
+                }
             }
+
+            if missing_tx {
+                let _ = tx
+                    .send(Err(Status::data_loss(format!(
+                        "Referenced full transaction missing for block {}",
+                        block.height
+                    ))))
+                    .await;
+                return;
+            }
+
+            if tx.send(Ok(block)).await.is_err() {
+                return;
+            }
+        }
+
+        if is_incomplete {
+            let _ = tx
+                .send(Err(Status::failed_precondition(
+                    "Incomplete coverage for requested block range",
+                )))
+                .await;
         }
     });
 

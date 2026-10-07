@@ -50,6 +50,24 @@ pub fn execute_reorg_rollback(
             params![h, hash],
         )
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
+    } else {
+        let start_h: u32 = tx
+            .query_row(
+                "SELECT coverage_start_height FROM coverage_metadata WHERE id = 1",
+                [],
+                |row| row.get(0),
+            )
+            .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
+        let reset_h = start_h.saturating_sub(1);
+        let empty_hash = vec![0u8; 32];
+        tx.execute(
+            "UPDATE coverage_metadata 
+             SET committed_height = ?1, latest_block_hash = ?2, updated_at = CURRENT_TIMESTAMP
+             WHERE id = 1",
+            params![reset_h, empty_hash],
+        )
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
     }
 
     tx.commit()

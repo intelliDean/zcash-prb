@@ -12,3 +12,4 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+zebra-chain = { workspace = true }

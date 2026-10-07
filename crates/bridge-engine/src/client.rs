@@ -22,10 +22,17 @@ impl UpstreamClient {
     }
 
     async fn connect(&self) -> Result<CompactTxStreamerClient<Channel>, BridgeError> {
-        let endpoint = Channel::from_shared(self.endpoint.clone())
+        let mut endpoint = Channel::from_shared(self.endpoint.clone())
             .map_err(|e| BridgeError::Upstream(format!("Invalid upstream URL: {e}")))?
             .timeout(self.timeout)
             .connect_timeout(Duration::from_secs(10));
+
+        if self.endpoint.starts_with("https://") {
+            let tls_config = tonic::transport::ClientTlsConfig::new().with_webpki_roots();
+            endpoint = endpoint
+                .tls_config(tls_config)
+                .map_err(|e| BridgeError::Upstream(format!("Failed to configure TLS: {e}")))?;
+        }
 
         let channel = endpoint.connect().await.map_err(|e| {
             BridgeError::Upstream(format!(

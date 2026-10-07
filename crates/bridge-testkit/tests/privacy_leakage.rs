@@ -15,10 +15,10 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
     // 1. Setup mock upstream server with 2 blocks and 2 transactions
     let mock = MockUpstreamServer::new();
 
-    let tx1_data = vec![0x04, 0x00, 0x00, 0x80, 0x11, 0x22, 0x33];
+    let tx1_data = hex::decode("030000807082c4030002e7719811893e0000095200ac6551ac636565b2835a0805750200025151481cdd86b3cc431800").unwrap();
     let (raw_tx1, tx1_hash) = create_test_tx(tx1_data.clone(), 100);
 
-    let tx2_data = vec![0x04, 0x00, 0x00, 0x80, 0x44, 0x55, 0x66];
+    let tx2_data = hex::decode("030000807082c4030187daa731f570a7a4060af0ce700d31bca7e74b3e3ba3d0e8a6392a062b8e86d9d7d00b21026553062e06b1013011ff08f083050009636a52635163006aac9abcef2a9908731900").unwrap();
     let (raw_tx2, tx2_hash) = create_test_tx(tx2_data.clone(), 101);
 
     mock.add_transaction(&tx1_hash, raw_tx1);
