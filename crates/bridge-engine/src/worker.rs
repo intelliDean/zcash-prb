@@ -336,7 +336,7 @@ impl AcquisitionWorker {
     async fn fetch_subtree_roots(
         &self,
         interval_end: BlockHeight,
-    ) -> Result<Vec<SubtreeRoot>, BridgeError> {
+    ) -> Result<Vec<(i32, SubtreeRoot)>, BridgeError> {
         let mut roots = Vec::new();
         for pool in [0, 1] {
             let existing_roots = self.storage.get_subtree_roots(pool, 0, u32::MAX).await?;
@@ -350,7 +350,7 @@ impl AcquisitionWorker {
 
             for r in fetched {
                 if r.completing_block_height <= interval_end.0 as u64 {
-                    roots.push(r);
+                    roots.push((pool, r));
                 }
             }
         }

@@ -173,7 +173,7 @@ mod tests {
             blocks: vec![b1],
             transactions: vec![],
             tree_states: vec![],
-            subtree_roots: vec![root1],
+            subtree_roots: vec![(0, root1)],
             transparent_outputs: vec![],
             transparent_spends: vec![],
             end_height: BlockHeight(100),
@@ -183,6 +183,11 @@ mod tests {
 
         let root2 = bridge_proto::SubtreeRoot {
             root_hash: vec![0x22; 32],
+            completing_block_hash: vec![0xbb; 32],
+            completing_block_height: 101,
+        };
+        let root_orchard = bridge_proto::SubtreeRoot {
+            root_hash: vec![0x33; 32],
             completing_block_hash: vec![0xbb; 32],
             completing_block_height: 101,
         };
@@ -199,7 +204,7 @@ mod tests {
             blocks: vec![b2],
             transactions: vec![],
             tree_states: vec![],
-            subtree_roots: vec![root2],
+            subtree_roots: vec![(0, root2), (1, root_orchard)],
             transparent_outputs: vec![],
             transparent_spends: vec![],
             end_height: BlockHeight(101),
@@ -207,18 +212,26 @@ mod tests {
         };
         storage.commit_verified_interval(batch2).await.unwrap();
 
-        // Verify both roots preserved across batches
-        let roots = storage.get_subtree_roots(0, 0, 10).await.unwrap();
-        assert_eq!(roots.len(), 2);
-        assert_eq!(roots[0].root_hash, vec![0x11; 32]);
-        assert_eq!(roots[0].completing_block_hash, vec![0xaa; 32]);
-        assert_eq!(roots[1].root_hash, vec![0x22; 32]);
-        assert_eq!(roots[1].completing_block_hash, vec![0xbb; 32]);
+        // Verify both pools preserved independently across batches
+        let sapling_roots = storage.get_subtree_roots(0, 0, 10).await.unwrap();
+        assert_eq!(sapling_roots.len(), 2);
+        assert_eq!(sapling_roots[0].root_hash, vec![0x11; 32]);
+        assert_eq!(sapling_roots[0].completing_block_hash, vec![0xaa; 32]);
+        assert_eq!(sapling_roots[1].root_hash, vec![0x22; 32]);
+        assert_eq!(sapling_roots[1].completing_block_hash, vec![0xbb; 32]);
+
+        let orchard_roots = storage.get_subtree_roots(1, 0, 10).await.unwrap();
+        assert_eq!(orchard_roots.len(), 1);
+        assert_eq!(orchard_roots[0].root_hash, vec![0x33; 32]);
+        assert_eq!(orchard_roots[0].completing_block_hash, vec![0xbb; 32]);
 
         // Reorg back block 101
         storage.handle_reorg(BlockHeight(101)).await.unwrap();
         let roots_after = storage.get_subtree_roots(0, 0, 10).await.unwrap();
         assert_eq!(roots_after.len(), 1);
         assert_eq!(roots_after[0].root_hash, vec![0x11; 32]);
+
+        let orchard_after = storage.get_subtree_roots(1, 0, 10).await.unwrap();
+        assert_eq!(orchard_after.len(), 0);
     }
 }

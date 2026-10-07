@@ -59,7 +59,7 @@ pub fn insert_full_transactions(
 
 pub fn insert_subtree_roots(
     tx: &Transaction,
-    roots: &[bridge_proto::SubtreeRoot],
+    roots: &[(i32, bridge_proto::SubtreeRoot)],
 ) -> Result<(), BridgeError> {
     if roots.is_empty() {
         return Ok(());
@@ -80,8 +80,8 @@ pub fn insert_subtree_roots(
         )
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
 
-    for r in roots {
-        let pool = 0i32;
+    for (pool, r) in roots {
+        let pool = *pool;
         let existing_idx: Option<u32> = check_stmt
             .query_row(params![pool, &r.root_hash], |row| row.get(0))
             .optional()

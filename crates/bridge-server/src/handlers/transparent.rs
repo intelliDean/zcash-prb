@@ -16,8 +16,19 @@ pub async fn get_taddress_txids(
     let req = request.into_inner();
     let addr = TransparentAddress::new(req.address);
 
+    let range = match (
+        req.range.as_ref().and_then(|r| r.start.as_ref()),
+        req.range.as_ref().and_then(|r| r.end.as_ref()),
+    ) {
+        (Some(s), Some(e)) => Some(bridge_core::IntervalRange::new(
+            BlockHeight(s.height as u32),
+            BlockHeight(e.height as u32),
+        )),
+        _ => None,
+    };
+
     let txs = storage
-        .get_taddress_transactions(&addr, None)
+        .get_taddress_transactions(&addr, range)
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
 
@@ -118,6 +129,13 @@ pub async fn get_address_utxos(
         all_utxos.extend(utxos);
     }
 
+    if req.start_height > 0 {
+        all_utxos.retain(|u| u.height >= req.start_height);
+    }
+    if req.max_entries > 0 && all_utxos.len() > req.max_entries as usize {
+        all_utxos.truncate(req.max_entries as usize);
+    }
+
     Ok(Response::new(GetAddressUtxosReplyList {
         address_utxos: all_utxos,
     }))
@@ -142,6 +160,13 @@ pub async fn get_address_utxos_stream(
                 _ => Status::internal(e.to_string()),
             })?;
         all_utxos.extend(utxos);
+    }
+
+    if req.start_height > 0 {
+        all_utxos.retain(|u| u.height >= req.start_height);
+    }
+    if req.max_entries > 0 && all_utxos.len() > req.max_entries as usize {
+        all_utxos.truncate(req.max_entries as usize);
     }
 
     let (tx, rx) = tokio::sync::mpsc::channel(all_utxos.len().max(1));

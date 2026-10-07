@@ -28,7 +28,7 @@ pub struct VerifiedIntervalBatch {
     pub blocks: Vec<CompactBlock>,
     pub transactions: Vec<RawTransaction>,
     pub tree_states: Vec<TreeState>,
-    pub subtree_roots: Vec<SubtreeRoot>,
+    pub subtree_roots: Vec<(i32, SubtreeRoot)>,
     pub transparent_outputs: Vec<TransparentOutputRecord>,
     pub transparent_spends: Vec<TransparentSpendRecord>,
     pub end_height: BlockHeight,
