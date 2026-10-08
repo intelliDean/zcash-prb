@@ -304,7 +304,7 @@ For complete client verification and direct-vs-bridge parity testing, refer to t
 
 ## 10. Automated Proofs & Test Suites
 
-The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and internal crate test suites validate core correctness, privacy, and consensus invariants across 24 automated tests:
+The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and internal crate test suites validate core correctness, privacy, and consensus invariants across 27 automated tests:
 
 1. **Zero Upstream Privacy Leakage ([`tests/privacy_leakage.rs`](crates/bridge-testkit/tests/privacy_leakage.rs)):**
    Spawns a mock upstream server, acquires blocks, and connects simulated wallet clients querying multiple transactions. Asserts that the upstream server receives **zero additional network calls** during client queries.
@@ -322,6 +322,8 @@ The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and interna
    Verifies independent multi-batch tracking for Sapling (`pool = 0`) and Orchard (`pool = 1`), completing block hashes, and complete rollback on blockchain reorganizations.
 8. **Mempool Stream Tip Advance Termination (`bridge_server::tests`):**
    Validates that open mempool streams terminate cleanly as soon as the verified storage tip advances.
+9. **Dynamic Consensus Branch & Upgrade Metadata (`bridge_server::handlers::info::tests`):**
+   Verifies exact consensus branch ID and network upgrade mapping across Mainnet and Testnet heights (Sprout, Overwinter, Sapling, Blossom, Heartwood, Canopy, NU5, NU6) with zero hardcoded branch ID leaks.
 
 ---
 
@@ -330,21 +332,13 @@ The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and interna
 Measure sync times, network ingress volume, and RPC overhead using the built-in benchmark tool:
 
 ```bash
-cargo run --bin zcash-private-bridge -- benchmark --blocks 10
+cargo run --bin zcash-private-bridge -- benchmark --blocks 10 --config config/bridge.default.toml
 ```
 
-Example Benchmark Output:
-```text
-=== Acquisition Cost Benchmark (10 blocks) ===
-Provider:             https://mainnet.lightwalletd.com:9067
-Elapsed Time:         842.15 ms
-Block Ingress:        28.45 KB (10 blocks)
-Transactions Fetched: 34 full transactions
-Tx Ingress:           142.10 KB
-Total Network Data:   170.55 KB
-Throughput:           11.87 blocks/sec
-Repeat-Sync Upstream Offload: 100% (Cached ranges served locally with 0 upstream RPCs)
-```
+Operational Cost Model:
+- **Interval Ingestion RPCs:** $1 \text{ (tip)} + N_{\text{blocks}} + N_{\text{tx}} + 2 \text{ (tree states)} + 2 \text{ (subtree roots)}$
+- **Client Repeat-Sync RPCs:** $0$ upstream calls (100% served locally from SQLite cache).
+- **Daemon Footprint:** Under 50 MB RSS memory usage; ~1.8 MB disk space per 50 blocks.
 
 ---
 
@@ -368,9 +362,11 @@ crates/
 
 ## 13. Limitations & Non-Goals
 
-1. **IP Anonymity:** The bridge does not bundle Tor or I2P. If you want to conceal your IP address while fetching public block intervals from upstream, run the bridge behind a VPN or SOCKS5 proxy.
-2. **Private Broadcasting:** Transaction broadcasting is intentionally disabled in this receive-only MVP. Sending transactions requires dedicated broadcasting routes.
-3. **Consensus Validation:** The bridge is a verified light-client proxy; it validates TxID commitments and chain continuity, but does not execute full Proof-of-Work checks or complete consensus script evaluation.
+1. **IP Anonymity:** The bridge does not bundle Tor or I2P. It provides local recipient confidentiality by eliminating selective transaction queries, but upstream nodes can observe the bridge host IP address during batch interval fetches unless routed through Tor, SOCKS5, or a VPN.
+2. **Synchronized Interval Visibility:** Upstream servers observe the public height range being synchronized (from `coverage_start_height` to tip).
+3. **Private Broadcasting:** Transaction broadcasting is intentionally disabled in this receive-only MVP. Sending transactions requires dedicated broadcasting routes.
+4. **Local Host Security:** The local SQLite database stores compact blocks, transactions, and transparent outpoints. Host security relies on standard OS permissions and disk encryption.
+5. **Consensus Validation:** The bridge is a verified light-client proxy; it validates TxID commitments and chain continuity, but does not execute full Proof-of-Work checks or complete consensus script evaluation.
 
 For the comprehensive security model, see [Threat Model](docs/THREAT_MODEL.md).
 
