@@ -112,6 +112,20 @@ impl StorageBackend for SqliteStorage {
         .map_err(|e| BridgeError::Storage(format!("Join error: {e}")))?
     }
 
+    async fn find_block_height_by_hash(
+        &self,
+        hash: &BlockHash,
+    ) -> Result<Option<BlockHeight>, BridgeError> {
+        let conn = self.conn.clone();
+        let hash_clone = *hash;
+        tokio::task::spawn_blocking(move || {
+            let conn = conn.lock().unwrap();
+            queries::query_height_by_hash(&conn, &hash_clone)
+        })
+        .await
+        .map_err(|e| BridgeError::Storage(format!("Join error: {e}")))?
+    }
+
     async fn get_compact_block_range(
         &self,
         start: BlockHeight,

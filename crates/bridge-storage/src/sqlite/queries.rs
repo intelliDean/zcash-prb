@@ -47,6 +47,22 @@ pub fn query_compact_block(
     }
 }
 
+pub fn query_height_by_hash(
+    conn: &Connection,
+    hash: &BlockHash,
+) -> Result<Option<BlockHeight>, BridgeError> {
+    let mut stmt = conn
+        .prepare("SELECT height FROM compact_blocks WHERE block_hash = ?1")
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
+    let h: Option<u32> = stmt
+        .query_row(params![hash.as_bytes()], |row| row.get(0))
+        .optional()
+        .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
+    Ok(h.map(BlockHeight))
+}
+
 pub fn query_compact_block_range(
     conn: &Connection,
     start: BlockHeight,

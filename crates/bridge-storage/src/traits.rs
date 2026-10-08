@@ -48,6 +48,10 @@ pub trait StorageBackend: Send + Sync + 'static {
         &self,
         height: BlockHeight,
     ) -> Result<Option<CompactBlock>, BridgeError>;
+    async fn find_block_height_by_hash(
+        &self,
+        hash: &BlockHash,
+    ) -> Result<Option<BlockHeight>, BridgeError>;
     async fn get_compact_block_range(
         &self,
         start: BlockHeight,

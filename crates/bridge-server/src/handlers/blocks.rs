@@ -68,12 +68,36 @@ pub async fn verify_block_integrity(
     Ok(())
 }
 
+pub async fn resolve_block_height(
+    storage: &Arc<dyn StorageBackend>,
+    id: &BlockId,
+) -> Result<BlockHeight, Status> {
+    if id.height > 0 {
+        Ok(BlockHeight(id.height as u32))
+    } else if id.hash.len() == 32 {
+        let mut arr = [0u8; 32];
+        arr.copy_from_slice(&id.hash);
+        storage
+            .find_block_height_by_hash(&bridge_core::BlockHash(arr))
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?
+            .ok_or_else(|| {
+                Status::not_found(format!(
+                    "Block with hash {} not found in local verified storage",
+                    hex::encode(&id.hash)
+                ))
+            })
+    } else {
+        Ok(BlockHeight(id.height as u32))
+    }
+}
+
 pub async fn get_block(
     storage: &Arc<dyn StorageBackend>,
     request: Request<BlockId>,
 ) -> Result<Response<CompactBlock>, Status> {
     let req = request.into_inner();
-    let height = BlockHeight(req.height as u32);
+    let height = resolve_block_height(storage, &req).await?;
 
     let block = storage
         .get_compact_block(height)

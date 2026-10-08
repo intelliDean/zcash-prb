@@ -1,5 +1,4 @@
 use super::blocks::ResponseStream;
-use bridge_core::BlockHeight;
 use bridge_proto::{BlockId, GetSubtreeRootsArg, SubtreeRoot, TreeState};
 use bridge_storage::StorageBackend;
 use std::sync::Arc;
@@ -11,7 +10,7 @@ pub async fn get_tree_state(
     request: Request<BlockId>,
 ) -> Result<Response<TreeState>, Status> {
     let req = request.into_inner();
-    let height = BlockHeight(req.height as u32);
+    let height = super::blocks::resolve_block_height(storage, &req).await?;
 
     let tree_state = storage
         .get_tree_state(height)
