@@ -10,24 +10,19 @@ pub async fn get_mempool_tx(
     _request: Request<GetMempoolTxRequest>,
 ) -> Result<Response<ResponseStream<CompactTx>>, Status> {
     let storage = storage.clone();
-    let initial_tip = storage
-        .get_latest_block()
-        .await
-        .ok()
-        .flatten()
-        .map(|(h, _)| h);
+    let initial_tip = storage.get_latest_block().await.ok().flatten();
 
     let (tx, rx) = tokio::sync::mpsc::channel(1);
     tokio::spawn(async move {
         loop {
-            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
             if tx.is_closed() {
                 break;
             }
-            if let Ok(Some((current_h, _))) = storage.get_latest_block().await
-                && Some(current_h) != initial_tip
+            if let Ok(current_tip) = storage.get_latest_block().await
+                && current_tip != initial_tip
             {
-                // Committed public tip changed; complete stream cleanly
+                // Committed public tip changed (height advance, rollback, or same-height replacement)
                 break;
             }
         }
@@ -41,24 +36,19 @@ pub async fn get_mempool_stream(
     _request: Request<Empty>,
 ) -> Result<Response<ResponseStream<RawTransaction>>, Status> {
     let storage = storage.clone();
-    let initial_tip = storage
-        .get_latest_block()
-        .await
-        .ok()
-        .flatten()
-        .map(|(h, _)| h);
+    let initial_tip = storage.get_latest_block().await.ok().flatten();
 
     let (tx, rx) = tokio::sync::mpsc::channel(1);
     tokio::spawn(async move {
         loop {
-            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
             if tx.is_closed() {
                 break;
             }
-            if let Ok(Some((current_h, _))) = storage.get_latest_block().await
-                && Some(current_h) != initial_tip
+            if let Ok(current_tip) = storage.get_latest_block().await
+                && current_tip != initial_tip
             {
-                // Committed public tip changed; complete stream cleanly
+                // Committed public tip changed (height advance, rollback, or same-height replacement)
                 break;
             }
         }

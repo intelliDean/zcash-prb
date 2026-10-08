@@ -225,6 +225,22 @@ mod tests {
         assert_eq!(orchard_roots[0].root_hash, vec![0x33; 32]);
         assert_eq!(orchard_roots[0].completing_block_hash, vec![0xbb; 32]);
 
+        // Regression test: max_entries = 0 returns all available roots
+        let all_sapling = storage.get_subtree_roots(0, 0, 0).await.unwrap();
+        assert_eq!(all_sapling.len(), 2);
+        assert_eq!(all_sapling[0].root_hash, vec![0x11; 32]);
+        assert_eq!(all_sapling[1].root_hash, vec![0x22; 32]);
+
+        // Regression test: positive limit (max_entries = 1) truncates results
+        let limited_sapling = storage.get_subtree_roots(0, 0, 1).await.unwrap();
+        assert_eq!(limited_sapling.len(), 1);
+        assert_eq!(limited_sapling[0].root_hash, vec![0x11; 32]);
+
+        // Regression test: start_index = 1 with max_entries = 0
+        let offset_sapling = storage.get_subtree_roots(0, 1, 0).await.unwrap();
+        assert_eq!(offset_sapling.len(), 1);
+        assert_eq!(offset_sapling[0].root_hash, vec![0x22; 32]);
+
         // Reorg back block 101
         storage.handle_reorg(BlockHeight(101)).await.unwrap();
         let roots_after = storage.get_subtree_roots(0, 0, 10).await.unwrap();

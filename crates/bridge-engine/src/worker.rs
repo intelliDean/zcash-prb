@@ -149,8 +149,15 @@ impl AcquisitionWorker {
         let (transparent_outputs, transparent_spends) =
             self.extract_transparent_records(&full_transactions);
 
-        // 4. Fetch tree state for interval end
+        // 4. Fetch tree state for interval end and interval start (for wallet birthday/checkpoint restore)
+        let mut tree_states = Vec::new();
         let end_tree_state = self.fetch_end_tree_state(interval.end).await?;
+        tree_states.push(end_tree_state);
+
+        if self.storage.get_tree_state(interval.start).await?.is_none() {
+            let start_tree_state = self.upstream.get_tree_state(interval.start).await?;
+            tree_states.push(start_tree_state);
+        }
 
         // 5. Fetch subtree roots completing within or up to this interval
         let subtree_roots = self.fetch_subtree_roots(interval.end).await?;
@@ -167,7 +174,7 @@ impl AcquisitionWorker {
         let batch = VerifiedIntervalBatch {
             blocks,
             transactions: full_transactions,
-            tree_states: vec![end_tree_state],
+            tree_states,
             subtree_roots,
             transparent_outputs,
             transparent_spends,
@@ -339,14 +346,13 @@ impl AcquisitionWorker {
     ) -> Result<Vec<(i32, SubtreeRoot)>, BridgeError> {
         let mut roots = Vec::new();
         for pool in [0, 1] {
-            let existing_roots = self.storage.get_subtree_roots(pool, 0, u32::MAX).await?;
+            let existing_roots = self.storage.get_subtree_roots(pool, 0, 0).await?;
             let start_index = existing_roots.len() as u32;
 
-            let fetched = match self.upstream.get_subtree_roots(pool, start_index, 0).await {
-                Ok(r) => r,
-                Err(BridgeError::Upstream(_)) => vec![],
-                Err(e) => return Err(e),
-            };
+            let fetched = self
+                .upstream
+                .get_subtree_roots(pool, start_index, 0)
+                .await?;
 
             for r in fetched {
                 if r.completing_block_height <= interval_end.0 as u64 {

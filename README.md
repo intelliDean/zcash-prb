@@ -186,7 +186,7 @@ cd zcash-prb
 # Build optimized release binary
 cargo build --release --bin zcash-private-bridge
 
-# Run full test suite (20 unit and integration tests)
+# Run full test suite (24 unit and integration tests)
 cargo test --workspace
 ```
 
@@ -304,7 +304,7 @@ For complete client verification and direct-vs-bridge parity testing, refer to t
 
 ## 10. Automated Proofs & Test Suites
 
-The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and internal crate test suites validate core correctness, privacy, and consensus invariants across 20 automated tests:
+The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and internal crate test suites validate core correctness, privacy, and consensus invariants across 24 automated tests:
 
 1. **Zero Upstream Privacy Leakage ([`tests/privacy_leakage.rs`](crates/bridge-testkit/tests/privacy_leakage.rs)):**
    Spawns a mock upstream server, acquires blocks, and connects simulated wallet clients querying multiple transactions. Asserts that the upstream server receives **zero additional network calls** during client queries.

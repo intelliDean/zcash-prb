@@ -16,7 +16,21 @@ pub fn execute_reorg_rollback(
     )
     .map_err(|e| BridgeError::Storage(e.to_string()))?;
 
-    // 2. Unspend transparent outputs that were spent at or after fork_height
+    // 2. Delete rolled back tree states
+    tx.execute(
+        "DELETE FROM tree_states WHERE height >= ?1",
+        params![fork_height.0],
+    )
+    .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
+    // 3. Delete transparent outputs created at or after fork_height
+    tx.execute(
+        "DELETE FROM transparent_outputs WHERE height >= ?1",
+        params![fork_height.0],
+    )
+    .map_err(|e| BridgeError::Storage(e.to_string()))?;
+
+    // 4. Unspend transparent outputs that were spent at or after fork_height
     tx.execute(
         "UPDATE transparent_outputs 
          SET spent_by_txid = NULL, spent_at_height = NULL 

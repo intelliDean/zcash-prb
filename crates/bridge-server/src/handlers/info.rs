@@ -26,9 +26,17 @@ pub async fn get_lightd_info(
     Ok(Response::new(LightdInfo {
         version: "0.1.0".to_string(),
         vendor: "zcash-private-receive-bridge".to_string(),
-        taddr_support: false,
-        chain_name: network_name.to_string(),
-        sapling_activation_height: 419200,
+        taddr_support: true,
+        chain_name: match network_name {
+            "mainnet" => "main".to_string(),
+            "testnet" => "test".to_string(),
+            "regtest" => "regtest".to_string(),
+            other => other.to_string(),
+        },
+        sapling_activation_height: match network_name {
+            "testnet" => 280000,
+            _ => 419200,
+        },
         consensus_branch_id: "c2d6d0b4".to_string(),
         block_height: meta.committed_height.0 as u64,
         git_commit: "main".to_string(),
