@@ -147,9 +147,9 @@ Private Receive Bridge Model:
 
 1. **Zero Selective Upstream Leakage:** Upstream observers only observe sequential downloads of public intervals $[H, H + N]$. Wallet-selected requests and cancellations **never** trigger upstream requests.
 2. **Zero-Key Invariant:** The daemon never accepts, requires, stores, or processes seeds, private keys, spending keys, or viewing keys. Note decryption remains strictly inside the wallet.
-3. **Cryptographic Tamper Resistance:** Every transaction is recomputed using strict Zcash consensus deserialization rules (ZIP 244 for v5, SHA-256d for v1–v4 via `zebra-chain`) and matched against block commitments. Corrupted, malformed, or synthetic transactions are rejected before committing.
+3. **Cryptographic Tamper Resistance & Cache Integrity:** Every transaction is recomputed using strict Zcash consensus deserialization rules (ZIP 244 for v5, SHA-256d for v1–v4 via `zebra-chain`), enforcing canonical lengths and strictly rejecting trailing unconsumed garbage bytes. On cache read, block and transaction hashes are re-verified, returning explicit `DATA_LOSS` errors upon any bit-rot or payload corruption.
 4. **Strict Localhost Isolation:** The gRPC server binds strictly to loopback addresses (`127.0.0.1` / `::1`), validated at startup. Remote LAN devices cannot access the service. Upstream HTTPS connections enforce WebPKI TLS certificate verification.
-5. **Confirmed-Only Profile (No Fabricated Mempool):** To prevent wallets from falsely assuming broadcasted transactions are confirmed while avoiding client sync crashes, mempool streams open quiet held streams that emit no unconfirmed transactions. Outbound broadcasts return `PERMISSION_DENIED` in the receive-only MVP.
+5. **Confirmed-Only Profile (Bounded Mempool Streams):** To prevent wallets from falsely assuming broadcasted transactions are confirmed while avoiding client sync crashes, mempool streams open quiet held streams that cleanly terminate on verified tip advances or client disconnects. Outbound broadcasts return `PERMISSION_DENIED` in the receive-only MVP.
 
 ---
 
@@ -186,7 +186,7 @@ cd zcash-prb
 # Build optimized release binary
 cargo build --release --bin zcash-private-bridge
 
-# Run full test suite (15 unit and integration tests)
+# Run full test suite (20 unit and integration tests)
 cargo test --workspace
 ```
 
@@ -290,21 +290,21 @@ For complete client verification and direct-vs-bridge parity testing, refer to t
 | RPC Method | Bridge Response | Upstream Leakage | Rationale |
 | :--- | :--- | :---: | :--- |
 | `GetLatestBlock` | Highest committed local block | **None** | Served from local SQLite checkpoint |
-| `GetBlock` | `CompactBlock` from local store | **None** | Served from local cache |
-| `GetBlockRange` | Stream `CompactBlock` range | **None** | Local sequential streaming |
-| `GetTransaction` | Full `RawTransaction` | **None** | **Error if missing.** Zero selective fallback |
-| `GetTreeState` | Sapling, Orchard, Ironwood tree | **None** | Preserved from interval endpoints |
-| `GetSubtreeRoots` | Subtree commitments | **None** | Local shielded tree indices |
-| `GetAddressUtxos` | Transparent UTXO set | **None** | Error on incomplete pre-coverage history |
-| `GetTaddressTransactions`| Transparent address records | **None** | Indexed locally from public intervals |
-| `GetMempoolTx` / `Stream`| Quiet held stream | **None** | Confirmed-only profile (no unconfirmed leakage) |
+| `GetBlock` | `CompactBlock` from local store | **None** | Resolved by height or 32-byte block hash |
+| `GetBlockRange` | Stream `CompactBlock` range | **None** | Clamped to local tip; stream closes cleanly at EOF |
+| `GetTransaction` | Full `RawTransaction` | **None** | **`DATA_LOSS` on corruption.** Zero selective fallback |
+| `GetTreeState` | Sapling, Orchard, Ironwood tree | **None** | Preserved from interval endpoints (by height/hash) |
+| `GetSubtreeRoots` | Subtree commitments | **None** | Multi-pool isolated (Sapling/Orchard) with reorg pruning |
+| `GetAddressUtxos` | Transparent UTXO set | **None** | Paginated (`start_height`, `max_entries`); error on incomplete history |
+| `GetTaddressTransactions` / `GetTaddressTxids` | Transparent address records | **None** | Indexed locally from public intervals; respects `range` |
+| `GetMempoolTx` / `Stream` | Quiet held stream | **None** | Closes cleanly on verified tip advance or disconnect |
 | `SendTransaction` | `PERMISSION_DENIED` | **None** | Outbound broadcasts blocked in receive MVP |
 
 ---
 
 ## 10. Automated Proofs & Test Suites
 
-The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) validates the core correctness and privacy invariants through isolated integration tests:
+The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and internal crate test suites validate core correctness, privacy, and consensus invariants across 20 automated tests:
 
 1. **Zero Upstream Privacy Leakage ([`tests/privacy_leakage.rs`](crates/bridge-testkit/tests/privacy_leakage.rs)):**
    Spawns a mock upstream server, acquires blocks, and connects simulated wallet clients querying multiple transactions. Asserts that the upstream server receives **zero additional network calls** during client queries.
@@ -314,6 +314,14 @@ The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) validates t
    Confirms that addresses with historical spends prior to the coverage start height trigger explicit `FAILED_PRECONDITION` errors instead of misleading zero balances.
 4. **Multi-Pool Receipt Coverage ([`tests/multi_pool_coverage.rs`](crates/bridge-testkit/tests/multi_pool_coverage.rs)):**
    Verifies concurrent ingestion and retrieval of Sapling outputs, Orchard actions, Ironwood actions, and transparent UTXOs.
+5. **Strict Consensus Trailing-Bytes Verification (`bridge_verifier::txid::tests`):**
+   Rejects synthetic or altered transaction payloads containing unconsumed trailing garbage bytes per strict consensus encoding rules.
+6. **Active Bit-Rot & Cache Integrity Protection (`bridge_server::tests`):**
+   Directly mutates committed SQLite payloads to simulate bit-rot and verifies that `GetTransaction` returns explicit `DATA_LOSS` rather than serving unverified data.
+7. **Multi-Batch & Reorg Subtree Isolation (`bridge_storage::tests`):**
+   Verifies independent multi-batch tracking for Sapling (`pool = 0`) and Orchard (`pool = 1`), completing block hashes, and complete rollback on blockchain reorganizations.
+8. **Mempool Stream Tip Advance Termination (`bridge_server::tests`):**
+   Validates that open mempool streams terminate cleanly as soon as the verified storage tip advances.
 
 ---
 
