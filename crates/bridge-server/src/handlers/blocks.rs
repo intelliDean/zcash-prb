@@ -136,10 +136,27 @@ pub async fn get_block_range(
         ));
     }
 
-    let expected_count = (end.0 - start.0 + 1) as usize;
+    let (tip, _) = match storage
+        .get_latest_block()
+        .await
+        .map_err(|e| Status::internal(e.to_string()))?
+    {
+        Some(t) => t,
+        None => return Err(Status::unavailable("Bridge coverage not yet initialized")),
+    };
+
+    if start.0 > tip.0 {
+        return Err(Status::failed_precondition(format!(
+            "Requested start height {} exceeds current verified tip {}",
+            start.0, tip.0
+        )));
+    }
+
+    let capped_end = if end.0 > tip.0 { tip } else { end };
+    let expected_count = (capped_end.0 - start.0 + 1) as usize;
 
     let blocks = storage
-        .get_compact_block_range(start, end)
+        .get_compact_block_range(start, capped_end)
         .await
         .map_err(|e| Status::internal(e.to_string()))?;
 

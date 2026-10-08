@@ -5,6 +5,7 @@ pub const SCHEMA_SQL: &str = r#"
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous = NORMAL;
 PRAGMA foreign_keys = ON;
+PRAGMA busy_timeout = 5000;
 
 -- 1. Metadata and Coverage Tracking
 CREATE TABLE IF NOT EXISTS coverage_metadata (
