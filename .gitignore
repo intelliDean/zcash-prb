@@ -6,4 +6,5 @@
 .idea/
 .vscode/
 private_bridge.txt
-demo/
+__pycache__/
+*.pyc
