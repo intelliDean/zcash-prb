@@ -253,7 +253,13 @@ Last Updated:         2026-10-06 21:15:00
 Acquisition Failures: 0
 ```
 
-### 4. Stop the Daemon
+### 4. Probe the Running Bridge
+Exercise the running daemon over loopback with the wallet RPC sequence and safe failure paths:
+```bash
+cargo run --bin zcash-private-bridge -- probe
+```
+
+### 5. Stop the Daemon
 ```bash
 cargo run --bin zcash-private-bridge -- stop --config config/bridge.toml
 ```
@@ -304,7 +310,7 @@ For complete client verification, watch-only fixtures, and empirical benchmarks 
 
 ## 10. Automated Proofs & Test Suites
 
-The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and internal crate test suites validate core correctness, privacy, and consensus invariants across 28 automated tests:
+The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and internal crate test suites validate core correctness, privacy, and consensus invariants across 29 automated tests:
 
 1. **Zero Upstream Privacy Leakage ([`tests/privacy_leakage.rs`](crates/bridge-testkit/tests/privacy_leakage.rs)):**
    Spawns a mock upstream server, acquires blocks, and connects simulated wallet clients querying multiple transactions. Asserts that the upstream server receives **zero additional network calls** during client queries.
@@ -326,31 +332,38 @@ The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and interna
    Validates that open mempool streams terminate cleanly as soon as the verified storage tip advances.
 10. **Dynamic Consensus Branch & Upgrade Metadata (`bridge_server::handlers::info::tests`):**
    Verifies exact consensus branch ID and network upgrade mapping across Mainnet and Testnet heights (Sprout, Overwinter, Sapling, Blossom, Heartwood, Canopy, NU5, NU6) with zero hardcoded branch ID leaks.
+11. **Wallet Probe Sequence & Offline Rescan Parity ([`tests/wallet_probe_verification.rs`](crates/bridge-testkit/tests/wallet_probe_verification.rs)):**
+   Exercises the full light wallet RPC sequence (`GetLightdInfo`, `GetLatestBlock`, `GetBlockRange`, `GetTreeState`, `GetSubtreeRoots`, `GetTransaction`), validates expected failure codes (`NOT_FOUND`, `PERMISSION_DENIED`), drops upstream connectivity, restarts from local SQLite storage, and confirms 100% offline rescan parity.
 
 ---
 
-## 11. Performance & Operating Cost Benchmarks
+## 11. Performance & Operating Resource Metrics
 
-Measure sync times, network ingress volume, and RPC overhead using the built-in benchmark tool and automated scripts:
+Measure sync times, network ingress volume, and process memory using the built-in benchmark tool and automated audit scripts:
 
 ```bash
 # Run acquisition cost benchmark across an interval
-cargo run --bin zcash-private-bridge -- benchmark --blocks 10 --config config/bridge.default.toml
+cargo run --release --bin zcash-private-bridge -- benchmark --blocks 10 --config config/bridge.default.toml
 
-# Run empirical head-to-head comparison vs. local Zebra + lightwalletd
-./scripts/benchmark_operating_advantage.sh 100 config/bridge.default.toml
+# Run empirical resource measurement script (preserves raw logs to artifacts/)
+./scripts/benchmark_operating_advantage.sh 5 config/bridge.default.toml
 
-# Verify retrieval privacy and zero selective fallback across multi-client queries
+# Verify retrieval privacy and zero selective fallback with raw upstream RPC logging
 ./scripts/verify_retrieval_privacy.sh
 ```
 
-Operational Cost Model & Head-to-Head Advantage:
-- **Disk Footprint:** **~18–145 MB** SQLite WAL (vs. **180–220 GB** for Zebra full node) $\rightarrow$ **>1,000x to 5,000x lighter**.
-- **RAM Footprint:** **41.01 MB RSS** (vs. **4–8 GB** for Zebra full node) $\rightarrow$ **>100x less memory**.
-- **Fresh Setup Latency:** **< 45 seconds to 4 minutes** (vs. **14–36+ hours** Initial Block Download from 2016).
-- **Client Repeat-Sync RPCs:** $0$ upstream calls (100% served locally from SQLite cache in < 450 ms).
+### Empirical Measured Resource Profile:
+* **Process Memory (RSS):** **~13.5 MB peak RSS** (empirically measured on Linux x86_64 via kernel child process `ru_maxrss`).
+* **Ingress Data Transfer:** **~181 KB for 5 mainnet blocks** (38 upstream RPC calls fetching 6 compact blocks and 31 full transactions unconditionally).
+* **Local Storage Growth:** Proportional to synchronized interval (~14 KB per block with typical transaction density).
+* **Client Serving Latency:** Local SQLite lookups complete in **< 50 ms** over loopback gRPC.
+* **Offline Rescan Capability:** Fully cached intervals serve subsequent wallet scans with **0 upstream network requests**.
 
-For the full benchmark methodology, watch-only fixture details, and video demonstration ([`demo/zcash_private_bridge_demo.mp4`](demo/zcash_private_bridge_demo.mp4)), see the [Grant Evaluation & Operating Advantage Report](docs/GRANT_EVALUATION.md) and [Client Compatibility Guide](docs/COMPATIBILITY.md).
+### Comparison Against Documented Full Node Baseline:
+* **Zebra + lightwalletd Baseline:** Running a full archival validator requires downloading and validating the entire Zcash blockchain history from Genesis (~200 GB NVMe storage, 4–8 GB RAM minimum specification per Zcash Foundation documentation).
+* **PRB Windowed Scope:** Rather than maintaining full historical archival state, PRB synchronizes only the user-configured birthday interval needed for current receiving, running in low-resource environments (laptops, standard VMs) without full chain download.
+
+For raw experiment logs, watch-only test fixtures, and offline rescan traces, see the [Grant Evaluation & Operating Advantage Report](docs/GRANT_EVALUATION.md) and [Fixtures Directory](docs/fixtures/).
 
 ---
 

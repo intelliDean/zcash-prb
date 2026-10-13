@@ -91,7 +91,7 @@ async fn download_transactions(
 ) -> Result<(usize, usize)> {
     let mut total_tx_bytes = 0usize;
     let mut rpc_calls = 0usize;
-    let mut failed_rpc_count = 0usize;
+    let mut failed = Vec::new();
 
     for txid in full_txids {
         rpc_calls += 1;
@@ -100,16 +100,17 @@ async fn download_transactions(
                 total_tx_bytes += raw_tx.data.len();
             }
             Err(e) => {
-                failed_rpc_count += 1;
                 warn!("Transaction download failed for {}: {}", txid, e);
+                failed.push(txid.to_string());
             }
         }
     }
 
-    if failed_rpc_count > 0 {
-        warn!(
-            "{} transaction downloads failed during benchmark",
-            failed_rpc_count
+    if !failed.is_empty() {
+        anyhow::bail!(
+            "{} of {} transaction downloads failed; benchmark result is invalid",
+            failed.len(),
+            full_txids.len()
         );
     }
 
@@ -136,8 +137,5 @@ fn print_summary(
     println!(
         "Total Network Ingress:     {:.2} KB",
         (block_bytes + tx_bytes) as f64 / 1024.0
-    );
-    println!(
-        "Repeat-Sync Upstream Offload: 100% (Cached ranges served locally with 0 upstream RPCs)"
     );
 }

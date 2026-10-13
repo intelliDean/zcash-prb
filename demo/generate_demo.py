@@ -189,7 +189,7 @@ def render_outro_card():
     bbox1 = draw.textbbox((0, 0), t1, font=font_title)
     draw.text((card_x + (card_w - (bbox1[2] - bbox1[0])) // 2, card_y + 50), t1, fill=GREEN, font=font_title)
 
-    t2 = "Zcash Private Receive Bridge is 100% Verified & Production Ready"
+    t2 = "Zcash Private Receive Bridge: Verified Architecture & Retrieval Privacy"
     bbox2 = draw.textbbox((0, 0), t2, font=font_card_head)
     draw.text((card_x + (card_w - (bbox2[2] - bbox2[0])) // 2, card_y + 120), t2, fill=WHITE, font=font_card_head)
 

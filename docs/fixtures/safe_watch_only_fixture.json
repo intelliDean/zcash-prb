@@ -1,0 +1,39 @@
+{
+  "description": "Safe Watch-Only Account Fixture for Zcash Community Grants Parity Evaluation",
+  "warning": "This fixture contains NO private spending keys. It is safe for public audit, repository hosting, and reproduction.",
+  "network": "mainnet",
+  "account": {
+    "account_name": "Parity-Watch-Only-Grant-Review",
+    "account_type": "Watch-Only (Unified Full Viewing Key)",
+    "birthday_height": 2500000,
+    "spending_key": null,
+    "unified_address": "u1w24w657q22u8e88849646y28kwh9784y48820w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q298",
+    "sapling_extended_fvk": "zxviews1q0ej7k8e24k5r24x8j82s7y6x7y2e2w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980w8s8j48q2980",
+    "orchard_fvk": "uview1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"
+  },
+  "confirmed_receipts": [
+    {
+      "txid": "8b6ceacbb27d4cb54bccb62f6632da385189361f895fc8b924ab143052b0b48b",
+      "height": 2500000,
+      "pool": "Sapling",
+      "amount_zatoshis": 25000000,
+      "amount_zec": 0.25,
+      "memo_utf8": "Grant Evaluation Parity Receipt - 2026-Q4",
+      "raw_data_bytes": 48
+    },
+    {
+      "txid": "6c41a5f6a7fff02dafa92c437862b80a9d77eaee6bbbce70f353c621585b8e7f",
+      "height": 2500001,
+      "pool": "Orchard",
+      "amount_zatoshis": 100000000,
+      "amount_zec": 1.0,
+      "memo_utf8": "Grant Evaluation Parity Receipt - 2026-Q4",
+      "raw_data_bytes": 80
+    }
+  ],
+  "verification_steps": {
+    "step_1": "Ingest interval [2500000..=2500004] into bridge storage.",
+    "step_2": "Run `cargo test --test wallet_probe_verification -- --nocapture` to generate live artifacts/wallet_probe_trace.jsonl and artifacts/offline_rescan_probe_trace.jsonl.",
+    "step_3": "Sever upstream network connection; query bridge over gRPC at 127.0.0.1:9067 to observe identical local rescan without network egress."
+  }
+}

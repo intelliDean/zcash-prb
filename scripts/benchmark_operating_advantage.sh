@@ -1,64 +1,118 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BLOCKS="${1:-100}"
+BLOCKS="${1:-10}"
 CONFIG_FILE="${2:-config/bridge.default.toml}"
+OUTPUT_DIR="artifacts"
+RAW_LOG="${OUTPUT_DIR}/benchmark_raw_output.txt"
+TIME_LOG="${OUTPUT_DIR}/benchmark_time_output.txt"
+
+mkdir -p "${OUTPUT_DIR}"
 
 echo "=========================================================================="
 echo "    Zcash Private Receive Bridge - Operating Advantage Benchmark Tool    "
 echo "=========================================================================="
-echo "Evaluating Local PRB vs Local Zebra + lightwalletd Baseline"
 echo "Target Evaluation Window: ${BLOCKS} blocks"
 echo "Configuration:            ${CONFIG_FILE}"
+echo "Preserving raw logs to:   ${RAW_LOG}"
 echo "--------------------------------------------------------------------------"
 
-mkdir -p /tmp/prb-bench
-TEMP_DB="/tmp/prb-bench/benchmark_store.db"
-rm -f "${TEMP_DB}"*
-
-# Ensure release binary is compiled
+# Ensure release binary is compiled; exit immediately on failure
 cargo build --release --bin zcash-private-bridge
 
-# Run benchmark with resource tracking
-START_TIME=$(date +%s%N)
-/usr/bin/time -v ./target/release/zcash-private-bridge benchmark --blocks "${BLOCKS}" --config "${CONFIG_FILE}" 2> /tmp/prb-bench/time_output.txt || true
-END_TIME=$(date +%s%N)
+# Execute benchmark with resource tracking using python3 standard library; DO NOT mask failures
+echo "Running benchmark measurement..."
+set +e
+python3 -c '
+import subprocess, resource, sys, time
 
-ELAPSED_MS=$(( (END_TIME - START_TIME) / 1000000 ))
-PEAK_RSS_KB=$(grep "Maximum resident set size" /tmp/prb-bench/time_output.txt | awk '{print $NF}' || echo "42000")
-PEAK_RSS_MB=$(echo "scale=2; ${PEAK_RSS_KB} / 1024" | bc || echo "41.0")
+args = ["./target/release/zcash-private-bridge", "benchmark", "--blocks", sys.argv[1], "--config", sys.argv[2]]
+start = time.time()
+proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+elapsed = time.time() - start
+usage = resource.getrusage(resource.RUSAGE_CHILDREN)
 
-# Compute approximate database size if populated
-DB_SIZE_KB=0
-if [ -f "data/bridge.db" ]; then
-    DB_SIZE_KB=$(du -k "data/bridge.db" | cut -f1)
+with open(sys.argv[3], "w") as f:
+    f.write(proc.stdout)
+
+with open(sys.argv[4], "w") as f:
+    f.write(proc.stderr)
+    f.write(f"\nElapsed (seconds): {elapsed:.2f}\n")
+    f.write(f"Maximum resident set size (kbytes): {usage.ru_maxrss}\n")
+
+sys.exit(proc.returncode)
+' "${BLOCKS}" "${CONFIG_FILE}" "${RAW_LOG}" "${TIME_LOG}"
+BENCH_STATUS=$?
+set -e
+
+if [ ${BENCH_STATUS} -ne 0 ]; then
+    echo "ERROR: Benchmark execution failed with exit code ${BENCH_STATUS}!" >&2
+    echo "--- Standard Error Output ---" >&2
+    cat "${TIME_LOG}" >&2
+    echo "--- Standard Output ---" >&2
+    cat "${RAW_LOG}" >&2
+    exit ${BENCH_STATUS}
 fi
-if [ "$DB_SIZE_KB" -eq 0 ]; then
-    # Estimate based on block count: ~35KB per block with transactions
-    ESTIMATED_KB=$(( BLOCKS * 35 ))
-    DB_SIZE_MB=$(echo "scale=2; ${ESTIMATED_KB} / 1024" | bc)
+
+# Parse empirical metrics directly from output
+cat "${RAW_LOG}"
+
+PEAK_RSS_KB=$(grep "Maximum resident set size (kbytes):" "${TIME_LOG}" | awk '{print $NF}')
+if [ -z "${PEAK_RSS_KB}" ]; then
+    echo "ERROR: Failed to extract peak RSS from time output!" >&2
+    exit 1
+fi
+PEAK_RSS_MB=$(echo "scale=2; ${PEAK_RSS_KB} / 1024" | bc)
+
+DB_PATH=$(grep "storage_path" "${CONFIG_FILE}" | cut -d'=' -f2 | tr -d ' "')
+if [ -z "${DB_PATH}" ]; then
+    DB_PATH="data/bridge.db"
+fi
+
+DB_SIZE_BYTES=0
+if [ -f "${DB_PATH}" ]; then
+    DB_SIZE_BYTES=$(stat -c %s "${DB_PATH}")
+fi
+DB_SIZE_MB=$(echo "scale=2; ${DB_SIZE_BYTES} / (1024 * 1024)" | bc)
+
+# Check for local running Zebra instance
+ZEBRA_RUNNING=0
+ZEBRA_RSS_MB="N/A"
+if pgrep -x zebrad > /dev/null 2>&1; then
+    ZEBRA_RUNNING=1
+    ZEBRA_PID=$(pgrep -x zebrad | head -n1)
+    ZEBRA_RSS_KB=$(ps -p "${ZEBRA_PID}" -o rss= | tr -d ' ')
+    ZEBRA_RSS_MB=$(echo "scale=2; ${ZEBRA_RSS_KB} / 1024" | bc)
+fi
+
+echo ""
+echo "=========================================================================="
+echo " EMPIRICAL RESOURCE MEASUREMENT: LOCAL PRB STACK"
+echo "=========================================================================="
+printf "%-32s | %-32s\n" "Measured Metric" "Private Receive Bridge (Empirical)"
+echo "---------------------------------+---------------------------------"
+printf "%-32s | %-32s\n" "Peak Process RSS" "${PEAK_RSS_MB} MB"
+printf "%-32s | %-32s\n" "Local SQLite Storage Size" "${DB_SIZE_MB} MB (${DB_SIZE_BYTES} bytes)"
+printf "%-32s | %-32s\n" "Blocks Evaluated" "${BLOCKS} blocks"
+echo "=========================================================================="
+
+echo ""
+echo "=========================================================================="
+echo " COMPARATIVE CONTEXT (Documented Full Node Baseline vs Local PRB)"
+echo "=========================================================================="
+if [ ${ZEBRA_RUNNING} -eq 1 ]; then
+    echo "Detected running local zebrad process (PID ${ZEBRA_PID}, RSS: ${ZEBRA_RSS_MB} MB)."
 else
-    DB_SIZE_MB=$(echo "scale=2; ${DB_SIZE_KB} / 1024" | bc)
+    echo "Note: No local Zebra daemon was detected running on this host."
+    echo "Baseline figures below cite published Zcash Foundation specifications."
 fi
-
-echo ""
-echo "=========================================================================="
-echo " EMPIRICAL HEAD-TO-HEAD COMPARISON TABLE: LOCAL PRB vs. ZEBRA + LIGHTWALLETD"
-echo "=========================================================================="
-printf "%-26s | %-24s | %-22s\n" "Resource / Dimension" "Zebra + lightwalletd" "Private Receive Bridge"
+echo "--------------------------------------------------------------------------"
+printf "%-26s | %-24s | %-22s\n" "Dimension" "Zebra + lightwalletd" "Private Receive Bridge"
 echo "---------------------------+--------------------------+-----------------------"
-printf "%-26s | %-24s | %-22s\n" "Disk Footprint" "~180-220 GB (RocksDB)" "${DB_SIZE_MB} MB (SQLite WAL)"
-printf "%-26s | %-24s | %-22s\n" "Peak Memory (RSS)" "4,096 - 8,192 MB" "${PEAK_RSS_MB} MB"
-printf "%-26s | %-24s | %-22s\n" "Setup Latency (Fresh)" "14 - 36+ Hours (IBD)" "< 2 Minutes"
-printf "%-26s | %-24s | %-22s\n" "Sync Latency (Pre-synced)" "1 - 3 Seconds" "< 450 ms (Local Loopback)"
-printf "%-26s | %-24s | %-22s\n" "Setup Complexity" "2 daemons + RPC wiring" "1 standalone binary"
-printf "%-26s | %-24s | %-22s\n" "Hardware Requirement" "Dedicated PC / Fast SSD" "Standard Laptop / VM"
-printf "%-26s | %-24s | %-22s\n" "Retrieval Privacy" "100% (Local full node)" "100% (Batch interval serving)"
+printf "%-26s | %-24s | %-22s\n" "Storage Architecture" "Full Chain (~200 GB SSD)" "Windowed SQLite (${DB_SIZE_MB} MB)"
+printf "%-26s | %-24s | %-22s\n" "Memory Footprint (RSS)" "4,096 - 8,192 MB (spec)" "${PEAK_RSS_MB} MB (measured)"
+printf "%-26s | %-24s | %-22s\n" "Daemon Architecture" "2 daemons + RPC wiring" "1 standalone binary"
+printf "%-26s | %-24s | %-22s\n" "Retrieval Privacy Model" "Full validation / local" "Unconditional batch interval"
 echo "=========================================================================="
-echo ""
-echo "KEY TAKEAWAY FOR ZCG COMMITTEE:"
-echo "PRB delivers 100% light-wallet retrieval privacy at >4,000x less disk space"
-echo "and >100x less RAM, eliminating the 150+ GB full-node barrier for everyday users."
-echo "=========================================================================="
+echo "Raw benchmark logs saved to: ${RAW_LOG} and ${TIME_LOG}"
 
-rm -rf /tmp/prb-bench

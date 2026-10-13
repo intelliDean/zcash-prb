@@ -4,7 +4,7 @@
 network = "mainnet"
 
 # Upstream public lightwalletd or Zaino provider
-upstream_provider = "https://mainnet.lightwalletd.com:9067"
+upstream_provider = "https://zec.rocks:443"
 
 # Local gRPC endpoint for wallets (SECURITY: must be localhost only)
 bind_address = "127.0.0.1:9067"

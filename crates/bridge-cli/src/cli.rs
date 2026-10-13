@@ -1,4 +1,6 @@
-use crate::commands::{StartArgs, run_benchmark, run_init_config, run_start, run_status, run_stop};
+use crate::commands::{
+    StartArgs, run_benchmark, run_init_config, run_probe, run_start, run_status, run_stop,
+};
 use bridge_core::BridgeConfig;
 use clap::{Parser, Subcommand};
 use std::path::{Path, PathBuf};
@@ -54,6 +56,12 @@ pub enum Commands {
         #[arg(short, long, default_value = "config/bridge.toml")]
         output: PathBuf,
     },
+
+    /// Exercise a running bridge with wallet-shaped RPCs and failure paths
+    Probe {
+        #[arg(long, help = "Bridge gRPC endpoint (default: http://<bind_address>)")]
+        endpoint: Option<String>,
+    },
 }
 
 impl Cli {
@@ -80,6 +88,7 @@ impl Cli {
             Commands::InitConfig { output } => run_init_config(&output),
             Commands::Status => run_status(&config).await,
             Commands::Stop => run_stop(&config),
+            Commands::Probe { endpoint } => run_probe(&config, endpoint).await,
             Commands::Benchmark { blocks, provider } => {
                 run_benchmark(&config, blocks, provider).await
             }

@@ -22,3 +22,4 @@ tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
 toml = { workspace = true }
 prost = { workspace = true }
+tonic = { workspace = true }

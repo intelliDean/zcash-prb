@@ -1,0 +1,18 @@
+=== Zcash Private Receive Bridge Cost Benchmark ===
+Provider Endpoint: https://zec.rocks:443
+Interval Size:     5 blocks
+
+1. Querying Upstream Chain Tip...
+   Chain Tip Height: 3516622
+   Benchmark Range:  [3516617..=3516622]
+
+2. Fetching Compact Blocks Individually...
+   Fetched 6 blocks in 3.28s
+   Discovered full transactions: 46
+
+=== Operating Costs Summary ===
+Total Time:                29.29s
+Total Upstream RPC Calls:  53
+Block Data Downloaded:     19.75 KB
+Tx Data Downloaded:        361.29 KB
+Total Network Ingress:     381.04 KB
