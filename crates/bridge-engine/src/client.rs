@@ -45,7 +45,11 @@ fn record_upstream_call(
     let elapsed_ms = started.elapsed().as_millis();
     let (ok, bytes, err) = match result {
         Ok(b) => (true, b, String::new()),
-        Err(e) => (false, 0, e.to_string().replace('\\', "\\\\").replace('"', "\\\"")),
+        Err(e) => (
+            false,
+            0,
+            e.to_string().replace('\\', "\\\\").replace('"', "\\\""),
+        ),
     };
     let line = format!(
         "{{\"ts_ms\":{ts_ms},\"endpoint\":\"{endpoint}\",\"method\":\"{method}\",\"arg\":\"{arg}\",\"ok\":{ok},\"response_bytes\":{bytes},\"elapsed_ms\":{elapsed_ms},\"error\":\"{err}\"}}\n"
@@ -120,9 +124,13 @@ impl UpstreamClient {
             Ok(res.into_inner())
         }
         .await;
-        self.trace("GetLatestBlock", "", started, &result, |b| {
-            prost::Message::encoded_len(b)
-        });
+        self.trace(
+            "GetLatestBlock",
+            "",
+            started,
+            &result,
+            prost::Message::encoded_len,
+        );
         result
     }
 
@@ -145,7 +153,7 @@ impl UpstreamClient {
             &format!("height={}", height.0),
             started,
             &result,
-            |b| prost::Message::encoded_len(b),
+            prost::Message::encoded_len,
         );
         result
     }
@@ -217,7 +225,7 @@ impl UpstreamClient {
             &format!("txid={txid}"),
             started,
             &result,
-            |t| prost::Message::encoded_len(t),
+            prost::Message::encoded_len,
         );
         result
     }
@@ -244,7 +252,7 @@ impl UpstreamClient {
             &format!("height={}", height.0),
             started,
             &result,
-            |t| prost::Message::encoded_len(t),
+            prost::Message::encoded_len,
         );
         result
     }

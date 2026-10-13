@@ -224,20 +224,27 @@ async fn execute_and_record_probe(
     // 1. GetLightdInfo
     let t = Instant::now();
     let info = client.get_lightd_info(Empty {}).await.unwrap().into_inner();
-    let is_nu5 = info.consensus_branch_id == "c2d6d0b4"
-        && info.upgrade_name.eq_ignore_ascii_case("nu5");
+    let is_nu5 =
+        info.consensus_branch_id == "c2d6d0b4" && info.upgrade_name.eq_ignore_ascii_case("nu5");
     record(
         "GetLightdInfo",
         "",
         "Dynamic NU5 consensus branch c2d6d0b4",
-        &format!("chain={} branch={} upgrade={} height={}", info.chain_name, info.consensus_branch_id, info.upgrade_name, info.block_height),
+        &format!(
+            "chain={} branch={} upgrade={} height={}",
+            info.chain_name, info.consensus_branch_id, info.upgrade_name, info.block_height
+        ),
         is_nu5,
         t.elapsed().as_millis(),
     );
 
     // 2. GetLatestBlock
     let t = Instant::now();
-    let tip = client.get_latest_block(ChainSpec {}).await.unwrap().into_inner();
+    let tip = client
+        .get_latest_block(ChainSpec {})
+        .await
+        .unwrap()
+        .into_inner();
     record(
         "GetLatestBlock",
         "",
@@ -251,8 +258,14 @@ async fn execute_and_record_probe(
     let t = Instant::now();
     let mut stream = client
         .get_block_range(BlockRange {
-            start: Some(BlockId { height: start_height, hash: vec![] }),
-            end: Some(BlockId { height: tip_height, hash: vec![] }),
+            start: Some(BlockId {
+                height: start_height,
+                hash: vec![],
+            }),
+            end: Some(BlockId {
+                height: tip_height,
+                hash: vec![],
+            }),
             pool_types: vec![],
         })
         .await
@@ -260,7 +273,7 @@ async fn execute_and_record_probe(
         .into_inner();
 
     let mut blocks = 0u64;
-    while let Some(_) = stream.message().await.unwrap() {
+    while stream.message().await.unwrap().is_some() {
         blocks += 1;
     }
     let want_blocks = tip_height - start_height + 1;
@@ -276,72 +289,154 @@ async fn execute_and_record_probe(
     // 4. GetTreeState at start and tip
     for h in [start_height, tip_height] {
         let t = Instant::now();
-        let res = client.get_tree_state(BlockId { height: h, hash: vec![] }).await;
+        let res = client
+            .get_tree_state(BlockId {
+                height: h,
+                hash: vec![],
+            })
+            .await;
         let (ok, out) = match res {
-            Ok(ts) => (true, format!("height={} sapling_len={}", ts.get_ref().height, ts.get_ref().sapling_tree.len())),
+            Ok(ts) => (
+                true,
+                format!(
+                    "height={} sapling_len={}",
+                    ts.get_ref().height,
+                    ts.get_ref().sapling_tree.len()
+                ),
+            ),
             Err(e) => (false, format!("{:?}: {}", e.code(), e.message())),
         };
-        record("GetTreeState", &format!("height={h}"), "OK", &out, ok, t.elapsed().as_millis());
+        record(
+            "GetTreeState",
+            &format!("height={h}"),
+            "OK",
+            &out,
+            ok,
+            t.elapsed().as_millis(),
+        );
     }
 
     // 5. GetSubtreeRoots
     for pool in [0i32, 1] {
         let t = Instant::now();
-        let res = client.get_subtree_roots(GetSubtreeRootsArg {
-            shielded_protocol: pool,
-            start_index: 0,
-            max_entries: 0,
-        }).await;
+        let res = client
+            .get_subtree_roots(GetSubtreeRootsArg {
+                shielded_protocol: pool,
+                start_index: 0,
+                max_entries: 0,
+            })
+            .await;
         let (ok, out) = match res {
             Ok(_) => (true, "roots stream OK".to_string()),
             Err(e) => (false, format!("{:?}: {}", e.code(), e.message())),
         };
-        record("GetSubtreeRoots", &format!("pool={pool}"), "OK", &out, ok, t.elapsed().as_millis());
+        record(
+            "GetSubtreeRoots",
+            &format!("pool={pool}"),
+            "OK",
+            &out,
+            ok,
+            t.elapsed().as_millis(),
+        );
     }
 
     // 6. GetTransaction for coverage txids
     for txid in &expected_txids {
         let t = Instant::now();
-        let res = client.get_transaction(TxFilter {
-            block: None,
-            index: 0,
-            hash: txid.clone(),
-        }).await;
+        let res = client
+            .get_transaction(TxFilter {
+                block: None,
+                index: 0,
+                hash: txid.clone(),
+            })
+            .await;
         let (ok, out) = match res {
             Ok(tx) => (true, format!("data_len={}", tx.get_ref().data.len())),
             Err(e) => (false, format!("{:?}: {}", e.code(), e.message())),
         };
-        record("GetTransaction", &format!("txid={}", hex::encode(txid)), "OK", &out, ok, t.elapsed().as_millis());
+        record(
+            "GetTransaction",
+            &format!("txid={}", hex::encode(txid)),
+            "OK",
+            &out,
+            ok,
+            t.elapsed().as_millis(),
+        );
     }
 
     // Failure Path 1: Out of range TxID -> NotFound
     let t = Instant::now();
     let un_synced_txid = vec![0x99u8; 32];
-    let res = client.get_transaction(TxFilter {
-        block: None,
-        index: 0,
-        hash: un_synced_txid.clone(),
-    }).await;
+    let res = client
+        .get_transaction(TxFilter {
+            block: None,
+            index: 0,
+            hash: un_synced_txid.clone(),
+        })
+        .await;
     let ok = matches!(&res, Err(e) if e.code() == Code::NotFound);
-    record("GetTransaction", "txid=9999..99 (un-synced)", "NotFound (zero-fallback)", &format!("{:?}", res.err().map(|e| e.code())), ok, t.elapsed().as_millis());
+    record(
+        "GetTransaction",
+        "txid=9999..99 (un-synced)",
+        "NotFound (zero-fallback)",
+        &format!("{:?}", res.err().map(|e| e.code())),
+        ok,
+        t.elapsed().as_millis(),
+    );
 
     // Failure Path 2: Block height above tip -> NotFound
     let t = Instant::now();
-    let res = client.get_block(BlockId { height: tip_height + 1000, hash: vec![] }).await;
+    let res = client
+        .get_block(BlockId {
+            height: tip_height + 1000,
+            hash: vec![],
+        })
+        .await;
     let ok = matches!(&res, Err(e) if e.code() == Code::NotFound);
-    record("GetBlock", "height=above_tip", "NotFound", &format!("{:?}", res.err().map(|e| e.code())), ok, t.elapsed().as_millis());
+    record(
+        "GetBlock",
+        "height=above_tip",
+        "NotFound",
+        &format!("{:?}", res.err().map(|e| e.code())),
+        ok,
+        t.elapsed().as_millis(),
+    );
 
     // Failure Path 3: TreeState below coverage -> NotFound
     let t = Instant::now();
-    let res = client.get_tree_state(BlockId { height: start_height.saturating_sub(1), hash: vec![] }).await;
+    let res = client
+        .get_tree_state(BlockId {
+            height: start_height.saturating_sub(1),
+            hash: vec![],
+        })
+        .await;
     let ok = matches!(&res, Err(e) if e.code() == Code::NotFound);
-    record("GetTreeState", "height=below_coverage", "NotFound", &format!("{:?}", res.err().map(|e| e.code())), ok, t.elapsed().as_millis());
+    record(
+        "GetTreeState",
+        "height=below_coverage",
+        "NotFound",
+        &format!("{:?}", res.err().map(|e| e.code())),
+        ok,
+        t.elapsed().as_millis(),
+    );
 
     // Failure Path 4: SendTransaction -> PermissionDenied
     let t = Instant::now();
-    let res = client.send_transaction(RawTransaction { data: vec![0u8; 8], height: 0 }).await;
+    let res = client
+        .send_transaction(RawTransaction {
+            data: vec![0u8; 8],
+            height: 0,
+        })
+        .await;
     let ok = matches!(&res, Err(e) if e.code() == Code::PermissionDenied);
-    record("SendTransaction", "dummy raw bytes", "PermissionDenied", &format!("{:?}", res.err().map(|e| e.code())), ok, t.elapsed().as_millis());
+    record(
+        "SendTransaction",
+        "dummy raw bytes",
+        "PermissionDenied",
+        &format!("{:?}", res.err().map(|e| e.code())),
+        ok,
+        t.elapsed().as_millis(),
+    );
 
     if let Ok(mut f) = File::create(trace_path) {
         for line in &log {
