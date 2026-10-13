@@ -170,3 +170,194 @@ async fn test_privacy_trace_proves_zero_selected_upstream_leakage() {
         assert!(!call.contains(&hex::encode(tx2_hash)));
     }
 }
+
+#[tokio::test]
+async fn test_privacy_with_different_interests_and_cache_misses_proves_zero_upstream_fallback() {
+    let mock = MockUpstreamServer::new();
+
+    let tx1_data = hex::decode("030000807082c4030002e7719811893e0000095200ac6551ac636565b2835a0805750200025151481cdd86b3cc431800").unwrap();
+    let (raw_tx1, tx1_hash) = create_test_tx(tx1_data.clone(), 100);
+
+    let tx2_data = hex::decode("030000807082c4030187daa731f570a7a4060af0ce700d31bca7e74b3e3ba3d0e8a6392a062b8e86d9d7d00b21026553062e06b1013011ff08f083050009636a52635163006aac9abcef2a9908731900").unwrap();
+    let (raw_tx2, tx2_hash) = create_test_tx(tx2_data.clone(), 101);
+
+    mock.add_transaction(&tx1_hash, raw_tx1);
+    mock.add_transaction(&tx2_hash, raw_tx2);
+
+    let b1 = CompactBlock {
+        height: 100,
+        hash: vec![1u8; 32],
+        prev_hash: vec![0u8; 32],
+        time: 1700000000,
+        header: vec![0; 80],
+        vtx: vec![CompactTx {
+            index: 0,
+            txid: tx1_hash.to_vec(),
+            fee: 1000,
+            spends: vec![],
+            outputs: vec![],
+            actions: vec![],
+            ironwood_actions: vec![],
+            vin: vec![],
+            vout: vec![],
+        }],
+        chain_metadata: None,
+    };
+
+    let b2 = CompactBlock {
+        height: 101,
+        hash: vec![2u8; 32],
+        prev_hash: vec![1u8; 32],
+        time: 1700000075,
+        header: vec![0; 80],
+        vtx: vec![CompactTx {
+            index: 0,
+            txid: tx2_hash.to_vec(),
+            fee: 1000,
+            spends: vec![],
+            outputs: vec![],
+            actions: vec![],
+            ironwood_actions: vec![],
+            vin: vec![],
+            vout: vec![],
+        }],
+        chain_metadata: None,
+    };
+
+    mock.add_block(b1);
+    mock.add_block(b2);
+
+    let (upstream_addr, _mock_shutdown) = start_mock_upstream(mock.clone()).await.unwrap();
+
+    let storage = Arc::new(SqliteStorage::in_memory().unwrap());
+    storage
+        .init_coverage(Network::Mainnet, BlockHeight(100))
+        .await
+        .unwrap();
+
+    let config = BridgeConfig {
+        network: Network::Mainnet,
+        upstream_provider: format!("http://{}", upstream_addr),
+        bind_address: "127.0.0.1:0".to_string(),
+        coverage_start_height: 100,
+        storage_path: std::path::PathBuf::from(":memory:"),
+        storage_limit_gb: Some(1),
+        acquisition_concurrency: 4,
+        interval_size: 10,
+        request_timeout_sec: 5,
+    };
+
+    let (shutdown_tx, shutdown_rx) = watch::channel(false);
+    let worker = AcquisitionWorker::new(config.clone(), storage.clone(), shutdown_rx);
+
+    tokio::spawn(async move {
+        worker.run().await;
+    });
+
+    for _ in 0..50 {
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        if let Ok(Some((h, _))) = storage.get_latest_block().await
+            && h == BlockHeight(101)
+        {
+            break;
+        }
+    }
+
+    let _ = shutdown_tx.send(true);
+
+    let calls_after_acquisition = mock.recorded_calls().len();
+
+    let local_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let local_addr = local_listener.local_addr().unwrap();
+    let service = BridgeGrpcService::new(storage.clone(), "mainnet");
+
+    tokio::spawn(async move {
+        tonic::transport::Server::builder()
+            .add_service(CompactTxStreamerServer::new(service))
+            .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(
+                local_listener,
+            ))
+            .await
+            .unwrap();
+    });
+
+    let channel = Channel::from_shared(format!("http://{}", local_addr))
+        .unwrap()
+        .connect()
+        .await
+        .unwrap();
+    let mut client = CompactTxStreamerClient::new(channel);
+
+    // Wallet 1: Queries transaction 1 (hit)
+    let res1 = client
+        .get_transaction(TxFilter {
+            block: None,
+            index: 0,
+            hash: tx1_hash.to_vec(),
+        })
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(res1.data, tx1_data);
+
+    // Wallet 2: Queries transaction 2 (hit)
+    let res2 = client
+        .get_transaction(TxFilter {
+            block: None,
+            index: 0,
+            hash: tx2_hash.to_vec(),
+        })
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(res2.data, tx2_data);
+
+    // Wallet 3 (Cache Miss): Queries un-synced / out-of-range transaction
+    let un_synced_txid = [0x99u8; 32];
+    let miss_err = client
+        .get_transaction(TxFilter {
+            block: None,
+            index: 0,
+            hash: un_synced_txid.to_vec(),
+        })
+        .await
+        .unwrap_err();
+    assert_eq!(miss_err.code(), tonic::Code::NotFound);
+    assert!(miss_err.message().contains("Zero-fallback policy active"));
+
+    // Wallet 4 (Failure / Out of Range): Queries un-synced block height
+    let block_err = client
+        .get_block(bridge_proto::BlockId {
+            height: 9999,
+            hash: vec![],
+        })
+        .await
+        .unwrap_err();
+    assert_eq!(block_err.code(), tonic::Code::NotFound);
+
+    // Wallet 5 (Failure / Out of Range): Queries un-synced tree state
+    let tree_err = client
+        .get_tree_state(bridge_proto::BlockId {
+            height: 9999,
+            hash: vec![],
+        })
+        .await
+        .unwrap_err();
+    assert_eq!(tree_err.code(), tonic::Code::NotFound);
+
+    // ZERO-LEAKAGE VERIFICATION:
+    // Even after disparate wallet interests, cache misses, and out-of-range queries,
+    // upstream calls remain STRICTLY IDENTICAL to post-acquisition count.
+    let final_calls = mock.recorded_calls();
+    assert_eq!(
+        final_calls.len(),
+        calls_after_acquisition,
+        "Zero-fallback policy violated! Upstream received calls during client queries: {:?}",
+        &final_calls[calls_after_acquisition..]
+    );
+
+    // Verify un-synced TxID was NEVER queried from upstream
+    for call in final_calls {
+        assert!(!call.contains(&hex::encode(un_synced_txid)));
+    }
+}
