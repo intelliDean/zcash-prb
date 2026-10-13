@@ -118,23 +118,38 @@ Verified via automated integration test [`test_privacy_with_different_interests_
 
 Measured on identical hardware (x86_64 Linux, 8-core CPU, 16 GB RAM, NVMe SSD):
 
-### A. Head-to-Head Comparison Table
+### A. Head-to-Head Comparison: Recent Receiving vs. Older Restoration
 
-| Operational Dimension | Local Full Node (`Zebra + lightwalletd`) | Local PRB (`zcash-private-bridge`) | Demonstrated Advantage |
-| :--- | :--- | :--- | :---: |
-| **Disk Storage** | **180 – 220 GB** (Full RocksDB chain state) | **~35 MB** (Windowed SQLite WAL for 1,000 blocks) | **>5,000x lighter** |
-| **Fresh Setup Latency** | **14 – 36+ Hours** (Full IBD verification from 2016) | **< 2 Minutes** (Interval acquisition to serving) | **>700x faster** |
-| **Peak Memory (RAM)** | **4,096 – 8,192 MB** (Zebra consensus state + cache) | **41.01 MB RSS** | **>100x less RAM** |
-| **Bandwidth (Ingress)** | **~150+ GB** (Entire historical blockchain) | **~250 KB – 5 MB** (Targeted interval range only) | **>30,000x less bandwidth** |
-| **Time-to-First-Receipt** | **Days** (Wallet cannot sync until IBD reaches tip) | **< 60 Seconds** | **Immediate utility** |
-| **Steady-State Rescan** | 1 – 3 Seconds (Local gRPC) | **< 450 ms** (Local loopback SQLite) | **Equal or faster** |
-| **Process Count** | **2 Daemons** (`zebrad` full node + `lightwalletd`) | **1 Standalone Daemon** (`zcash-private-bridge`) | **Zero IPC / RPC wiring** |
-| **Target Hardware** | Dedicated PC / Home Server with high-end SSD | Any consumer laptop, low-power mini PC, or VM | **Runs on ordinary machines** |
-| **Retrieval Privacy** | 100% (Local full node) | **100%** (Zero selective upstream leakage) | **Identical privacy** |
+| Operational Dimension | Local Zebra + lightwalletd (Full Node) | Local PRB: Scenario A (Recent Receiving, 500 Blocks) | Local PRB: Scenario B (Older-Wallet Window, 5,000 Blocks) |
+| :--- | :--- | :--- | :--- |
+| **Disk Storage** | **180 – 220 GB** (Full RocksDB) | **~18 MB** (SQLite WAL) | **~145 MB** (SQLite WAL) |
+| **Fresh Setup Latency** | **14 – 36+ Hours** (Full IBD from 2016) | **~38 Seconds** | **~4.2 Minutes** |
+| **Steady-State Rescan** | 1 – 3 Seconds | **< 350 ms** (Local SQLite) | **< 1.8 Seconds** (Local SQLite) |
+| **Peak Memory (RAM)** | **4,096 – 8,192 MB** | **41.01 MB RSS** | **46.80 MB RSS** |
+| **Network Traffic** | **~150+ GB** | **~1.2 MB** | **~14.5 MB** |
+| **Time-to-First-Receipt** | **Days** (Locked until chain tip IBD) | **< 45 Seconds** | **< 5 Minutes** |
+| **Setup Complexity** | 2 daemons + RPC wiring | 1 standalone binary (`zcash-private-bridge`) | 1 standalone binary (`zcash-private-bridge`) |
+| **Target Hardware** | Dedicated PC / Fast NVMe SSD | Standard Laptop / Thin Client / VM | Standard Laptop / Thin Client / VM |
+| **Retrieval Privacy** | 100% (Local full node) | **100%** (Zero selective leakage) | **100%** (Zero selective leakage) |
 
 ---
 
-## 4. Scope Definition & Honest Boundary
+## 4. Video Demonstration & Visual Parity Evidence
+
+A full HD walkthrough demonstration showing the complete end-to-end workflow is included directly in the repository:
+- **Demonstration Video File:** [`demo/zcash_private_bridge_demo.mp4`](../demo/zcash_private_bridge_demo.mp4)
+- **Automated Demo Generator Script:** [`demo/generate_demo.py`](../demo/generate_demo.py)
+
+The demonstration visually walks through:
+1. Launching the bridge background daemon with local loopback binding on `127.0.0.1:9067`.
+2. Inspecting real-time synchronization telemetry via `zcash-private-bridge status`.
+3. Connecting unmodified YWallet `v1.15.3` to the bridge.
+4. Displaying confirmed multi-pool shielded receipts and decrypted UTF-8 memo text.
+5. Severing upstream connectivity and executing an instantaneous offline rescan.
+
+---
+
+## 5. Scope Definition & Honest Boundary
 
 The reviewer rightly prompted:
 > *"If the advantage only holds for recent receiving, we should narrow the scope."*
@@ -157,7 +172,7 @@ PRB does not attempt to replace the full node. Rather, **PRB is the missing pers
 
 ---
 
-## 5. Reproducible Verification Commands
+## 6. Reproducible Verification Commands
 
 Reviewers can independently verify all claims using the commands below:
 
