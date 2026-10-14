@@ -1,0 +1,42 @@
+=== ZCASH PRIVATE RECEIVE BRIDGE: USEFUL COVERAGE & NETWORK TRAFFIC AUDIT ===
+
+--- Coverage Window: older_historical_nu5 (Blocks 2500000..=2500049, 50 blocks) ---
+Upstream Ingress Bytes:        1254477 bytes (1.196 MB)
+Total Upstream gRPC Calls:     284
+Upstream Calls by Method:
+  - GetBlock: 50 calls
+  - GetLatestBlock: 1 calls
+  - GetSubtreeRoots: 2 calls
+  - GetTransaction: 229 calls
+  - GetTreeState: 2 calls
+Process Level I/O (/proc/io):
+  - cancelled_write_bytes: 0
+  - rchar: 20015
+  - read_bytes: 0
+  - syscr: 45
+  - syscw: 2009
+  - wchar: 1878101
+  - write_bytes: 1949696
+Client Serving Overhead:       0 Upstream Calls (100% served from local SQLite storage)
+Probe Verification Status:     All 12 RPCs PASSED (Exit Code: 0)
+
+--- Coverage Window: recent_mainnet_tip (Blocks 3516550..=3516599, 50 blocks) ---
+Upstream Ingress Bytes:        3168696 bytes (3.022 MB)
+Total Upstream gRPC Calls:     512
+Upstream Calls by Method:
+  - GetBlock: 50 calls
+  - GetLatestBlock: 1 calls
+  - GetSubtreeRoots: 2 calls
+  - GetTransaction: 457 calls
+  - GetTreeState: 2 calls
+Process Level I/O (/proc/io):
+  - cancelled_write_bytes: 77824
+  - rchar: 122412
+  - read_bytes: 0
+  - syscr: 69
+  - syscw: 10477
+  - wchar: 17799976
+  - write_bytes: 4182016
+Client Serving Overhead:       0 Upstream Calls (100% served from local SQLite storage)
+Probe Verification Status:     All 12 RPCs PASSED (Exit Code: 0)
+

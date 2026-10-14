@@ -333,31 +333,37 @@ The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and interna
 10. **Dynamic Consensus Branch & Upgrade Metadata (`bridge_server::handlers::info::tests`):**
    Verifies exact consensus branch ID and network upgrade mapping across Mainnet and Testnet heights (Sprout, Overwinter, Sapling, Blossom, Heartwood, Canopy, NU5, NU6) with zero hardcoded branch ID leaks.
 11. **Wallet Probe Sequence & Offline Rescan Parity ([`tests/wallet_probe_verification.rs`](crates/bridge-testkit/tests/wallet_probe_verification.rs)):**
-   Exercises the full light wallet RPC sequence (`GetLightdInfo`, `GetLatestBlock`, `GetBlockRange`, `GetTreeState`, `GetSubtreeRoots`, `GetTransaction`), validates expected failure codes (`NOT_FOUND`, `PERMISSION_DENIED`), drops upstream connectivity, restarts from local SQLite storage, and confirms 100% offline rescan parity.
+    Exercises the full light wallet RPC sequence (`GetLightdInfo`, `GetLatestBlock`, `GetBlockRange`, `GetTreeState`, `GetSubtreeRoots`, `GetTransaction`), validates expected failure codes (`NOT_FOUND`, `PERMISSION_DENIED`), drops upstream connectivity, restarts from local SQLite storage, and confirms 100% offline rescan parity.
+12. **Official Wallet Receipt & Paired State Parity ([`tests/wallet_receipt_demonstration.rs`](crates/bridge-testkit/tests/wallet_receipt_demonstration.rs)):**
+    Runs paired wallet synchronization against standard upstream `lightwalletd` versus local `zcash-private-bridge`. Imports the valid ZIP-32 viewing key fixture (`zxviews1...`), discovers Sapling (0.25 ZEC) and Orchard (1.00 ZEC) notes, decrypts the memo text (`"Grant Evaluation Parity Receipt - 2026-Q4"`), and verifies bit-for-bit equivalence between paired JSON and SQL exports ([`artifacts/wallet_state_local_prb.json`](artifacts/wallet_state_local_prb.json) and [`docs/fixtures/wallet_state_local_prb.sql`](docs/fixtures/wallet_state_local_prb.sql)) with zero selective query leakage to upstream.
 
 ---
 
 ## 11. Performance & Operating Resource Metrics
 
-Measure sync times, verification performance, DB/WAL storage, and gRPC serving latency using the built-in benchmark tool and automated measurement scripts:
+Measure sync times, verification performance, DB/WAL storage, network traffic, and gRPC serving latency using the built-in benchmark tool and automated measurement scripts:
 
 ```bash
-# 1. Run live daemon performance measurement (evaluates both Older and Recent coverage)
+# 1. Run live daemon performance & network traffic measurement (50-block windows)
 python3 scripts/measure_running_daemon.py
 
 # 2. Run empirical resource measurement script (preserves raw logs to artifacts/)
-./scripts/benchmark_operating_advantage.sh 10 config/bridge.default.toml
+./scripts/benchmark_operating_advantage.sh 50 config/bridge.default.toml
 
 # 3. Verify retrieval privacy and zero selective fallback with raw upstream RPC logging
 ./scripts/verify_retrieval_privacy.sh
+
+# 4. Run official wallet receipt demonstration test
+cargo test --test wallet_receipt_demonstration -- --nocapture
 ```
 
 ### Empirical Measured Resource Profile (Live Running Daemon):
-*All figures below are directly reconciled with [`artifacts/recent_vs_older_coverage.json`](artifacts/recent_vs_older_coverage.json) and [`artifacts/daemon_storage_breakdown.txt`](artifacts/daemon_storage_breakdown.txt).*
-* **Process Memory (RSS):** **14.82 MB – 15.55 MB peak RSS** (empirically measured on Linux x86_64 during live synchronization, verification, and gRPC serving).
-* **Sync & Cryptographic Verification Speed:** **17.01 s** (NU5: 10 blocks, 39 txs) to **23.02 s** (NU6: 10 blocks, 66 txs) over live mainnet.
-* **Local Storage Footprint (DB + WAL + SHM):** **639.55 KB** (NU5) to **921.19 KB** (NU6) total disk storage for 10-block windows including full transaction payloads.
-* **Client Serving Latency:** Local SQLite lookups average **4.50 ms – 4.83 ms** over loopback gRPC (max 24–33 ms when batch-serving 39–66 transactions).
+*All figures below are directly reconciled with [`artifacts/recent_vs_older_coverage.json`](artifacts/recent_vs_older_coverage.json), [`artifacts/daemon_storage_breakdown.txt`](artifacts/daemon_storage_breakdown.txt), and [`artifacts/birthday_to_scan_end_network_traffic.txt`](artifacts/birthday_to_scan_end_network_traffic.txt).*
+* **Process Memory (RSS):** **16.93 MB – 20.34 MB peak RSS** (empirically measured on Linux x86_64 during live 50-block synchronization, verification, and gRPC serving).
+* **Sync & Cryptographic Verification Speed:** **38.02 s** (NU5: 50 blocks, 229 txs) to **63.03 s** (NU6: 50 blocks, 457 txs) over live mainnet.
+* **Local Storage Footprint (DB + WAL + SHM):** **1.76 MB** (NU5, 50 blocks) to **3.75 MB** (NU6, 50 blocks) total disk storage including full transaction payloads.
+* **Network Traffic (Ingress):** **1.20 MB across 284 RPCs** (NU5 birthday restoration) to **3.02 MB across 512 RPCs** (NU6 tip receiving interval).
+* **Client Serving Overhead:** **0 Upstream Calls (100% Local)**. Lookups average **23.08 ms – 27.33 ms** over loopback gRPC.
 * **Offline Rescan Capability:** Fully cached intervals serve subsequent wallet scans with **0 upstream network requests**.
 
 ### Comparison Against Documented Full Node Baseline:

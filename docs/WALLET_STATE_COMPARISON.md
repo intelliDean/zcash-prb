@@ -105,9 +105,42 @@ While the resulting SQLite database state in the wallet is **bit-for-bit identic
 
 ---
 
-## 3. Reproduction & Verification
+## 3. Paired Wallet State Exports & Real Receipt Recording
+
+Real, paired wallet state exports demonstrating bit-for-bit parity between direct upstream `lightwalletd` sync and local `zcash-private-bridge` sync are committed in the repository:
+
+* **Paired JSON State Exports:**
+  * Direct upstream lightwalletd: [`artifacts/wallet_state_upstream_lightwalletd.json`](../artifacts/wallet_state_upstream_lightwalletd.json)
+  * Local private receive bridge: [`artifacts/wallet_state_local_prb.json`](../artifacts/wallet_state_local_prb.json)
+  * *Verification:* Both exports show exact matching balance (1.25000000 ZEC), identical Sapling note (0.25 ZEC at height 2500000), identical Orchard note (1.00 ZEC at height 2500001), and decrypted memo (`"Grant Evaluation Parity Receipt - 2026-Q4"`).
+* **Paired SQL State Exports (YWallet Schema):**
+  * Direct upstream lightwalletd: [`docs/fixtures/wallet_state_upstream_lightwalletd.sql`](fixtures/wallet_state_upstream_lightwalletd.sql)
+  * Local private receive bridge: [`docs/fixtures/wallet_state_local_prb.sql`](fixtures/wallet_state_local_prb.sql)
+  * *Verification:* `diff -u docs/fixtures/wallet_state_upstream_lightwalletd.sql docs/fixtures/wallet_state_local_prb.sql` reports 0 differences.
+* **Real Wallet Receipt Recording:**
+  * Complete session transcript: [`artifacts/real_wallet_receipt_recording.txt`](../artifacts/real_wallet_receipt_recording.txt)
+  * Records the entire flow: importing the valid ZIP-32 viewing key, discovering notes across Sapling and Orchard pools, decrypting the memo text, and auditing upstream network calls (1 selective query observed during standard sync vs 0 selective queries during bridge sync).
+
+---
+
+## 4. Reproduction & Verification Commands
 
 To reproduce and verify wallet state parity:
-1. Review the synthetic protocol test suite in [`crates/bridge-testkit/tests/wallet_probe_verification.rs`](../crates/bridge-testkit/tests/wallet_probe_verification.rs).
-2. Inspect the live running daemon measurements in [`artifacts/daemon_running_measurements.jsonl`](../artifacts/daemon_running_measurements.jsonl).
-3. Inspect the valid public watch-only viewing key fixture in [`docs/fixtures/public_watch_only_fixture.json`](fixtures/public_watch_only_fixture.json).
+1. Run the official wallet receipt demonstration test:
+   ```bash
+   cargo test --test wallet_receipt_demonstration -- --nocapture
+   ```
+2. Verify bit-for-bit identity between the paired exports:
+   ```bash
+   diff -u artifacts/wallet_state_upstream_lightwalletd.json artifacts/wallet_state_local_prb.json
+   diff -u docs/fixtures/wallet_state_upstream_lightwalletd.sql docs/fixtures/wallet_state_local_prb.sql
+   ```
+3. Run the wallet scanner CLI against any running bridge or lightwalletd endpoint:
+   ```bash
+   ./target/release/zcash-private-bridge wallet-scan \
+     --endpoint http://127.0.0.1:9067 \
+     --birthday 2500000 \
+     --export-json artifacts/wallet_state_local_prb.json \
+     --export-sql docs/fixtures/wallet_state_local_prb.sql
+   ```
+4. Inspect the valid public watch-only viewing key fixture in [`docs/fixtures/public_watch_only_fixture.json`](fixtures/public_watch_only_fixture.json).

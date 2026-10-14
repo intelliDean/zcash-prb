@@ -1,34 +1,34 @@
 === ZCASH PRIVATE RECEIVE BRIDGE: LIVE DAEMON STORAGE & WAL BREAKDOWN ===
 
---- Coverage Window: older_historical_nu5 (Blocks 2500000..=2500009) ---
-Sync & Verification Duration:  17.01 s
-Peak Process RSS:              14.82 MB
+--- Coverage Window: older_historical_nu5 (Blocks 2500000..=2500049) ---
+Sync & Verification Duration:  38.02 s
+Peak Process RSS:              16.93 MB
 Storage Pre-Shutdown (Active WAL):
   - bridge.db-shm: 32768 bytes (32.00 KB)
-  - bridge.db-wal: 618032 bytes (603.55 KB)
+  - bridge.db-wal: 1767512 bytes (1726.09 KB)
   - bridge.db: 4096 bytes (4.00 KB)
-  Total Pre-Shutdown: 654896 bytes (639.55 KB)
+  Total Pre-Shutdown: 1804376 bytes (1762.09 KB)
 Storage Post-Shutdown (Checkpointed):
   - bridge.db-shm: 32768 bytes (32.00 KB)
-  - bridge.db-wal: 618032 bytes (603.55 KB)
+  - bridge.db-wal: 1767512 bytes (1726.09 KB)
   - bridge.db: 4096 bytes (4.00 KB)
-  Total Post-Shutdown: 654896 bytes (639.55 KB)
-Serving Average Latency:       4.5 ms
-Serving Max Latency:           24 ms
+  Total Post-Shutdown: 1804376 bytes (1762.09 KB)
+Serving Average Latency:       23.08 ms
+Serving Max Latency:           163 ms
 
---- Coverage Window: recent_mainnet_tip (Blocks 3516600..=3516609) ---
-Sync & Verification Duration:  23.02 s
-Peak Process RSS:              15.55 MB
+--- Coverage Window: recent_mainnet_tip (Blocks 3516550..=3516599) ---
+Sync & Verification Duration:  63.03 s
+Peak Process RSS:              20.34 MB
 Storage Pre-Shutdown (Active WAL):
   - bridge.db-shm: 32768 bytes (32.00 KB)
-  - bridge.db-wal: 906432 bytes (885.19 KB)
+  - bridge.db-wal: 3806912 bytes (3717.69 KB)
   - bridge.db: 4096 bytes (4.00 KB)
-  Total Pre-Shutdown: 943296 bytes (921.19 KB)
+  Total Pre-Shutdown: 3843776 bytes (3753.69 KB)
 Storage Post-Shutdown (Checkpointed):
   - bridge.db-shm: 32768 bytes (32.00 KB)
-  - bridge.db-wal: 906432 bytes (885.19 KB)
+  - bridge.db-wal: 3806912 bytes (3717.69 KB)
   - bridge.db: 4096 bytes (4.00 KB)
-  Total Post-Shutdown: 943296 bytes (921.19 KB)
-Serving Average Latency:       4.83 ms
-Serving Max Latency:           33 ms
+  Total Post-Shutdown: 3843776 bytes (3753.69 KB)
+Serving Average Latency:       27.33 ms
+Serving Max Latency:           222 ms
 

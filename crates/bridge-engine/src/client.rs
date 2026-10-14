@@ -6,8 +6,9 @@ use bridge_proto::{
 };
 use std::fs::{File, OpenOptions};
 use std::io::Write;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use tokio::sync::RwLock;
 use tonic::transport::Channel;
 
 /// Environment variable naming a file to which every upstream RPC is appended
@@ -63,6 +64,7 @@ fn record_upstream_call(
 pub struct UpstreamClient {
     endpoint: String,
     timeout: Duration,
+    cached_channel: Arc<RwLock<Option<Channel>>>,
 }
 
 impl UpstreamClient {
@@ -70,6 +72,7 @@ impl UpstreamClient {
         Self {
             endpoint: endpoint.into(),
             timeout: Duration::from_secs(timeout_sec),
+            cached_channel: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -90,7 +93,18 @@ impl UpstreamClient {
         );
     }
 
-    async fn connect(&self) -> Result<CompactTxStreamerClient<Channel>, BridgeError> {
+    async fn channel(&self) -> Result<Channel, BridgeError> {
+        {
+            let r = self.cached_channel.read().await;
+            if let Some(ch) = r.as_ref() {
+                return Ok(ch.clone());
+            }
+        }
+        let mut w = self.cached_channel.write().await;
+        if let Some(ch) = w.as_ref() {
+            return Ok(ch.clone());
+        }
+
         let mut endpoint = Channel::from_shared(self.endpoint.clone())
             .map_err(|e| BridgeError::Upstream(format!("Invalid upstream URL: {e}")))?
             .timeout(self.timeout)
@@ -110,6 +124,12 @@ impl UpstreamClient {
             ))
         })?;
 
+        *w = Some(channel.clone());
+        Ok(channel)
+    }
+
+    async fn connect(&self) -> Result<CompactTxStreamerClient<Channel>, BridgeError> {
+        let channel = self.channel().await?;
         Ok(CompactTxStreamerClient::new(channel))
     }
 

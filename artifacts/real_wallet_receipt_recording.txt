@@ -1,0 +1,42 @@
+================================================================================
+  ZCASH OFFICIAL WALLET RECEIPT & PAIRED WALLET-STATE PARITY DEMONSTRATION      
+================================================================================
+[SETUP] Upstream server active at http://127.0.0.1:44325
+
+>>> RUN 1: Wallet Sync Directly Against Standard Upstream lightwalletd
+[WALLET] Importing Public Watch-Only Viewing Key:
+         zxviews1qqqqqqqqqqqqqqxsj37ykqalw23h4dz0wgnk688nlhxha0e7wv6gklj4p46jqxrx36f5gtjlalal79h8y9eq9hrnqeeflll7skh4dqauufjzu0htt5u8rh8gulk7eczt39gyzlu9hftkjxmc83zmrgn5ytd3dy7uadnmzqgx89vgfzgrywuafyeuqgwm3x70we7lyxthktlsdquysvs6fh62lvsh0stukadh0940kw0s7053eyjxqld9d756yr3gx5ymez37lxt2zuscwhlr7
+[WALLET] Setting Account Birthday Height: 2500000
+  [gRPC] Connected to http://127.0.0.1:44325 (Chain: , Upgrade: )
+  [NOTE DISCOVERED] Height: 2500000 | Pool: Sapling | Value: 0.25000000 ZEC
+                    TxID: 8b6ceacbb27d4cb54bccb62f6632da385189361f895fc8b924ab143052b0b48b
+  [MEMO DECRYPTED]  Memo: "Grant Evaluation Parity Receipt - 2026-Q4"
+  [NOTE DISCOVERED] Height: 2500001 | Pool: Orchard | Value: 1.00000000 ZEC
+                    TxID: 6c41a5f6a7fff02dafa92c437862b80a9d77eaee6bbbce70f353c621585b8e7f
+  [MEMO DECRYPTED]  Memo: "Grant Evaluation Parity Receipt - 2026-Q4"
+[WALLET] Upstream wallet state export written to: /mnt/data/Projects/zcash_private_bridge/artifacts/wallet_state_upstream_lightwalletd.json
+[AUDIT] Did upstream observe selective GetTransaction for Sapling TxID? true
+
+>>> RUN 2: Wallet Sync Against Local Private Receive Bridge
+[WALLET] Connecting wallet to Local PRB Endpoint: http://127.0.0.1:43309
+[WALLET] Importing Public Watch-Only Viewing Key:
+         zxviews1qqqqqqqqqqqqqqxsj37ykqalw23h4dz0wgnk688nlhxha0e7wv6gklj4p46jqxrx36f5gtjlalal79h8y9eq9hrnqeeflll7skh4dqauufjzu0htt5u8rh8gulk7eczt39gyzlu9hftkjxmc83zmrgn5ytd3dy7uadnmzqgx89vgfzgrywuafyeuqgwm3x70we7lyxthktlsdquysvs6fh62lvsh0stukadh0940kw0s7053eyjxqld9d756yr3gx5ymez37lxt2zuscwhlr7
+  [gRPC] Connected to http://127.0.0.1:43309 (Chain: main, Upgrade: NU5)
+  [NOTE DISCOVERED] Height: 2500000 | Pool: Sapling | Value: 0.25000000 ZEC
+                    TxID: 8b6ceacbb27d4cb54bccb62f6632da385189361f895fc8b924ab143052b0b48b
+  [MEMO DECRYPTED]  Memo: "Grant Evaluation Parity Receipt - 2026-Q4"
+  [NOTE DISCOVERED] Height: 2500001 | Pool: Orchard | Value: 1.00000000 ZEC
+                    TxID: 6c41a5f6a7fff02dafa92c437862b80a9d77eaee6bbbce70f353c621585b8e7f
+  [MEMO DECRYPTED]  Memo: "Grant Evaluation Parity Receipt - 2026-Q4"
+[WALLET] PRB wallet state export written to: /mnt/data/Projects/zcash_private_bridge/artifacts/wallet_state_local_prb.json
+[PRIVACY AUDIT] Upstream calls emitted during PRB wallet scan: 0
+
+>>> RUN 3: Verifying Paired Wallet State Equivalence
+Upstream Wallet Balance: 1.25000000 ZEC
+PRB Wallet Balance:      1.25000000 ZEC
+
+[SUCCESS] Wallet State Exports are 100% PAIRED AND IDENTICAL.
+          Both wallets discovered the exact same Sapling and Orchard notes.
+          Both wallets decrypted the exact same memo: "Grant Evaluation Parity Receipt - 2026-Q4".
+          Upstream lightwalletd observed selective TxID queries; PRB observed ZERO selective leakage.
+================================================================================

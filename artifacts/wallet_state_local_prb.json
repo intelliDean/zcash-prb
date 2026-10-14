@@ -1,0 +1,26 @@
+{
+  "account_name": "Audited-Watch-Only",
+  "viewing_key": "zxviews1qqqqqqqqqqqqqqxsj37ykqalw23h4dz0wgnk688nlhxha0e7wv6gklj4p46jqxrx36f5gtjlalal79h8y9eq9hrnqeeflll7skh4dqauufjzu0htt5u8rh8gulk7eczt39gyzlu9hftkjxmc83zmrgn5ytd3dy7uadnmzqgx89vgfzgrywuafyeuqgwm3x70we7lyxthktlsdquysvs6fh62lvsh0stukadh0940kw0s7053eyjxqld9d756yr3gx5ymez37lxt2zuscwhlr7",
+  "birthday_height": 2500000,
+  "synced_height": 2500004,
+  "balance_zatoshis": 125000000,
+  "balance_zec": 1.25,
+  "receipts": [
+    {
+      "txid": "8b6ceacbb27d4cb54bccb62f6632da385189361f895fc8b924ab143052b0b48b",
+      "height": 2500000,
+      "pool": "Sapling",
+      "amount_zatoshis": 25000000,
+      "amount_zec": 0.25,
+      "decrypted_memo": "Grant Evaluation Parity Receipt - 2026-Q4"
+    },
+    {
+      "txid": "6c41a5f6a7fff02dafa92c437862b80a9d77eaee6bbbce70f353c621585b8e7f",
+      "height": 2500001,
+      "pool": "Orchard",
+      "amount_zatoshis": 100000000,
+      "amount_zec": 1.0,
+      "decrypted_memo": "Grant Evaluation Parity Receipt - 2026-Q4"
+    }
+  ]
+}

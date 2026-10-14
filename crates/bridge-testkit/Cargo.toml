@@ -19,3 +19,5 @@ tempfile = { workspace = true }
 async-trait = { workspace = true }
 hex = { workspace = true }
 blake2b_simd = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

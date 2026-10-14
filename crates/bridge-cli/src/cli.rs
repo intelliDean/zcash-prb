@@ -62,6 +62,30 @@ pub enum Commands {
         #[arg(long, help = "Bridge gRPC endpoint (default: http://<bind_address>)")]
         endpoint: Option<String>,
     },
+
+    /// Perform a full wallet scan, discover received notes, decrypt memos, and export wallet state
+    WalletScan {
+        #[arg(long, help = "gRPC endpoint to scan from (default: local bridge)")]
+        endpoint: Option<String>,
+
+        #[arg(long, help = "Watch-only viewing key string")]
+        viewing_key: Option<String>,
+
+        #[arg(long, default_value_t = 2500000, help = "Account birthday height")]
+        birthday: u64,
+
+        #[arg(long, help = "Optional scan end height")]
+        scan_end: Option<u64>,
+
+        #[arg(long, help = "Path to export SQLite wallet database")]
+        export_db: Option<PathBuf>,
+
+        #[arg(long, help = "Path to export structured JSON wallet state snapshot")]
+        export_json: Option<PathBuf>,
+
+        #[arg(long, help = "Path to export SQL table dump")]
+        export_sql: Option<PathBuf>,
+    },
 }
 
 impl Cli {
@@ -89,6 +113,29 @@ impl Cli {
             Commands::Status => run_status(&config).await,
             Commands::Stop => run_stop(&config),
             Commands::Probe { endpoint } => run_probe(&config, endpoint).await,
+            Commands::WalletScan {
+                endpoint,
+                viewing_key,
+                birthday,
+                scan_end,
+                export_db,
+                export_json,
+                export_sql,
+            } => {
+                crate::commands::run_wallet_scan(
+                    &config,
+                    crate::commands::WalletScanArgs {
+                        endpoint,
+                        viewing_key,
+                        birthday,
+                        scan_end,
+                        export_db,
+                        export_json,
+                        export_sql,
+                    },
+                )
+                .await
+            }
             Commands::Benchmark { blocks, provider } => {
                 run_benchmark(&config, blocks, provider).await
             }
