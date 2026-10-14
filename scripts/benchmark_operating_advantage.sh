@@ -70,9 +70,12 @@ if [ -z "${DB_PATH}" ]; then
 fi
 
 DB_SIZE_BYTES=0
-if [ -f "${DB_PATH}" ]; then
-    DB_SIZE_BYTES=$(stat -c %s "${DB_PATH}")
-fi
+for f in "${DB_PATH}" "${DB_PATH}-wal" "${DB_PATH}-shm"; do
+    if [ -f "${f}" ]; then
+        SZ=$(stat -c %s "${f}")
+        DB_SIZE_BYTES=$((DB_SIZE_BYTES + SZ))
+    fi
+done
 DB_SIZE_MB=$(echo "scale=2; ${DB_SIZE_BYTES} / (1024 * 1024)" | bc)
 
 # Check for local running Zebra instance
@@ -87,32 +90,33 @@ fi
 
 echo ""
 echo "=========================================================================="
-echo " EMPIRICAL RESOURCE MEASUREMENT: LOCAL PRB STACK"
+echo " EMPIRICAL RESOURCE MEASUREMENT: LOCAL PRB STACK (LIVE RUN)"
 echo "=========================================================================="
 printf "%-32s | %-32s\n" "Measured Metric" "Private Receive Bridge (Empirical)"
 echo "---------------------------------+---------------------------------"
 printf "%-32s | %-32s\n" "Peak Process RSS" "${PEAK_RSS_MB} MB"
-printf "%-32s | %-32s\n" "Local SQLite Storage Size" "${DB_SIZE_MB} MB (${DB_SIZE_BYTES} bytes)"
+printf "%-32s | %-32s\n" "Local SQLite Storage (DB+WAL)" "${DB_SIZE_MB} MB (${DB_SIZE_BYTES} bytes)"
 printf "%-32s | %-32s\n" "Blocks Evaluated" "${BLOCKS} blocks"
 echo "=========================================================================="
 
 echo ""
 echo "=========================================================================="
-echo " COMPARATIVE CONTEXT (Documented Full Node Baseline vs Local PRB)"
+echo " COMPARATIVE CONTEXT (Documented Zebra Specs vs Local PRB Empirical)"
 echo "=========================================================================="
 if [ ${ZEBRA_RUNNING} -eq 1 ]; then
     echo "Detected running local zebrad process (PID ${ZEBRA_PID}, RSS: ${ZEBRA_RSS_MB} MB)."
 else
     echo "Note: No local Zebra daemon was detected running on this host."
-    echo "Baseline figures below cite published Zcash Foundation specifications."
+    echo "Baseline figures below cite published Zcash Foundation specifications (Documented Specs)."
 fi
 echo "--------------------------------------------------------------------------"
-printf "%-26s | %-24s | %-22s\n" "Dimension" "Zebra + lightwalletd" "Private Receive Bridge"
-echo "---------------------------+--------------------------+-----------------------"
-printf "%-26s | %-24s | %-22s\n" "Storage Architecture" "Full Chain (~200 GB SSD)" "Windowed SQLite (${DB_SIZE_MB} MB)"
-printf "%-26s | %-24s | %-22s\n" "Memory Footprint (RSS)" "4,096 - 8,192 MB (spec)" "${PEAK_RSS_MB} MB (measured)"
-printf "%-26s | %-24s | %-22s\n" "Daemon Architecture" "2 daemons + RPC wiring" "1 standalone binary"
-printf "%-26s | %-24s | %-22s\n" "Retrieval Privacy Model" "Full validation / local" "Unconditional batch interval"
+printf "%-26s | %-28s | %-22s\n" "Dimension" "Zebra (Documented Baseline)" "PRB (Empirical Window)"
+echo "---------------------------+------------------------------+-----------------------"
+printf "%-26s | %-28s | %-22s\n" "Storage Architecture" "Full Chain (~200 GB SSD)" "Windowed SQLite (${DB_SIZE_MB} MB)"
+printf "%-26s | %-28s | %-22s\n" "Memory Footprint (RSS)" "4,096 - 8,192 MB (spec)" "${PEAK_RSS_MB} MB (measured)"
+printf "%-26s | %-28s | %-22s\n" "Daemon Architecture" "2 daemons + RPC wiring" "1 standalone binary"
+printf "%-26s | %-28s | %-22s\n" "Consensus Validation" "Full PoW consensus rules" "Adjacency + Tx hash checks"
+printf "%-26s | %-28s | %-22s\n" "Retrieval Privacy Model" "Full validation / local" "Unconditional batch interval"
 echo "=========================================================================="
 echo "Raw benchmark logs saved to: ${RAW_LOG} and ${TIME_LOG}"
 

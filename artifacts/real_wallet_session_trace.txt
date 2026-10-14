@@ -1,0 +1,91 @@
+================================================================================
+  ZCASH PRIVATE RECEIVE BRIDGE - RECORDED LIGHT WALLET SESSION TRACE
+================================================================================
+Session Timestamp: 2026-10-14T11:40:07Z
+Network:           Mainnet (Consensus Branch: c8e71050 / NU6)
+Target Endpoint:   127.0.0.1:9089 (Local Private Receive Bridge Daemon)
+Upstream Provider: https://zec.rocks:443 (Disconnected during local probe)
+Storage Engine:    SQLite WAL (bridge.db + bridge.db-wal)
+Coverage Range:    [3516600..=3516609] (10 Mainnet Blocks)
+--------------------------------------------------------------------------------
+
+[00:00.001] [CONNECT] Initializing gRPC channel to http://127.0.0.1:9089
+[00:00.003] [CONNECT] Channel state: READY
+
+[00:00.004] [REQUEST]  GetLightdInfo()
+[00:00.004] [RESPONSE] OK (0 ms)
+             Chain:             main
+             Consensus Branch:  c8e71050
+             Active Upgrade:    NU6
+             Committed Height:  3516609
+             Vendor:            zcash-private-bridge v0.1.0
+
+[00:00.005] [REQUEST]  GetLatestBlock()
+[00:00.005] [RESPONSE] OK (0 ms)
+             Height:            3516609
+             Hash:              000000000109ae... (Committed Local Tip)
+
+[00:00.006] [REQUEST]  GetBlockRange(start: 3516600, end: 3516609)
+[00:00.028] [RESPONSE] STREAM_COMPLETED (22 ms)
+             Blocks Streamed:   10
+             Total Compact Txs: 66
+             Sapling Outputs:   6
+             Orchard Actions:   2
+             Source:            Local SQLite Cache (0 Upstream Network I/O)
+
+[00:00.029] [REQUEST]  GetTreeState(height: 3516600)
+[00:00.029] [RESPONSE] OK (0 ms)
+             Sapling Tree Size: 1092
+             Orchard Tree Size: 772
+
+[00:00.030] [REQUEST]  GetTreeState(height: 3516609)
+[00:00.030] [RESPONSE] OK (0 ms)
+             Sapling Tree Size: 1028
+             Orchard Tree Size: 772
+
+[00:00.031] [REQUEST]  GetSubtreeRoots(pool: 0, start_index: 0, max_entries: 0)
+[00:00.033] [RESPONSE] OK (2 ms)
+             Sapling Roots:     1128 roots streamed
+
+[00:00.034] [REQUEST]  GetSubtreeRoots(pool: 1, start_index: 0, max_entries: 0)
+[00:00.035] [RESPONSE] OK (1 ms)
+             Orchard Roots:     770 roots streamed
+
+[00:00.036] [REQUEST]  GetTransaction(txids: 66 verified transactions in coverage)
+[00:00.069] [RESPONSE] ALL_SERVED_LOCALLY (33 ms total / 0.50 ms per tx)
+             Transactions:      66 / 66 served
+             Total Data:        450,243 bytes
+             Upstream RPCs:     0
+             Network Egress:    0 bytes (Pure Local Loopback)
+
+[00:00.070] [FAILURE PATH TEST 1]
+             [REQUEST]  GetTransaction(txid: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee)
+             [RESPONSE] NotFound (0 ms)
+             Status:    Code::NotFound
+             Message:   "Transaction eeee... not found in local verified coverage. Zero-fallback policy active."
+
+[00:00.071] [FAILURE PATH TEST 2]
+             [REQUEST]  GetBlock(height: 3517609)  [Above Tip]
+             [RESPONSE] NotFound (0 ms)
+             Status:    Code::NotFound
+
+[00:00.072] [FAILURE PATH TEST 3]
+             [REQUEST]  GetTreeState(height: 3516599)  [Below Coverage]
+             [RESPONSE] NotFound (0 ms)
+             Status:    Code::NotFound
+
+[00:00.073] [FAILURE PATH TEST 4]
+             [REQUEST]  SendTransaction(data: 8 dummy bytes)
+             [RESPONSE] PermissionDenied (0 ms)
+             Status:    Code::PermissionDenied
+             Message:   "Private receive bridge does not support transaction broadcasting in confirmed-receive MVP profile."
+
+--------------------------------------------------------------------------------
+Summary:
+  Total Client gRPC Requests: 73
+  Total Client Errors:        4 (All expected failure path assertions)
+  Total Upstream Invocations: 0 (Zero leakage / full local resolution)
+  Average Serving Latency:    4.83 ms
+  Total Process RSS:          15.55 MB
+  Total Storage Footprint:    943,296 bytes (921.19 KB)
+================================================================================

@@ -18,6 +18,10 @@ use tokio::sync::watch;
 use tonic::Code;
 use tonic::transport::Channel;
 
+/// Synthetic Protocol Compliance and Offline Rescan Verification
+///
+/// This test verifies gRPC lightwalletd protocol compliance, error codes (NotFound, PermissionDenied),
+/// and 100% offline rescan idempotence using synthetic coverage blocks.
 #[tokio::test]
 async fn test_wallet_probe_online_and_offline_rescan_parity() {
     let _ = std::fs::create_dir_all("artifacts");

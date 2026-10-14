@@ -1,5 +1,7 @@
--- YWallet / Zcash Wallet State Export for Watch-Only Parity Fixture
--- Complete standalone schema and dataset: safe for public reproduction and audit
+-- Synthetic Protocol Test Fixture: Mock YWallet Schema & Table State
+-- Purpose: Protocol verification of schema fields and offline SQLite table layout.
+-- Note: This is a synthetic mock fixture designed for testing, not an export from a live mainnet wallet.
+-- For cryptographically derived valid viewing keys, see `docs/fixtures/public_watch_only_fixture.json`.
 
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;

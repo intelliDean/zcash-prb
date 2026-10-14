@@ -1,5 +1,7 @@
 {
-  "description": "Safe Watch-Only Account Fixture for Zcash Community Grants Parity Evaluation",
+  "description": "Synthetic Protocol Test Fixture for Automated gRPC Conformance Testing",
+  "fixture_type": "Synthetic Protocol Test Vector (Mock Keys for Edge-Case & Replay Testing)",
+  "disclaimer": "This fixture contains mock key material engineered to test gRPC error handling (NotFound, PermissionDenied), protocol response shapes, and offline rescan idempotence. For cryptographically derived valid viewing keys, see `docs/fixtures/public_watch_only_fixture.json`.",
   "warning": "This fixture contains NO private spending keys. It is safe for public audit, repository hosting, and reproduction.",
   "network": "mainnet",
   "account": {

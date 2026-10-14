@@ -1,0 +1,31 @@
+{
+  "description": "Valid Public Watch-Only Viewing Key Fixture for Zcash Protocol Evaluation",
+  "fixture_type": "Cryptographically Valid Public Watch-Only Viewing Key (ZIP-32 Derivation)",
+  "warning": "This fixture contains NO private spending keys. It is safe for public documentation, audit, repository hosting, and reproduction.",
+  "derivation_standard": "ZIP-32 (Shielded Hierarchical Deterministic Wallets)",
+  "network": "mainnet",
+  "viewing_keys": {
+    "sapling_extended_fvk": "zxviews1qqqqqqqqqqqqqqxsj37ykqalw23h4dz0wgnk688nlhxha0e7wv6gklj4p46jqxrx36f5gtjlalal79h8y9eq9hrnqeeflll7skh4dqauufjzu0htt5u8rh8gulk7eczt39gyzlu9hftkjxmc83zmrgn5ytd3dy7uadnmzqgx89vgfzgrywuafyeuqgwm3x70we7lyxthktlsdquysvs6fh62lvsh0stukadh0940kw0s7053eyjxqld9d756yr3gx5ymez37lxt2zuscwhlr7",
+    "sapling_fvk_hex": "000000000000000000d0947c4b03bf72a37ab44f72276d1cf3fdcd7ebf3e73348b7e550d752018668e93442e5feffbff16e7217202dc7306729ffffe85af5683bce2642e3eeb5d3871dce8e7edece04b8950417f85ba57691b783c45b1a27422db1693dceb67b10106395884890323b9d4933c021db89bcf767df21977b2ff0683848321a4df4afb2177c17cb75b7796afb39f0f3e91c924607da56fa9a20e283509bc8a3ef996a172",
+    "transparent_public_address": "t1bWjEzNFqTVz8ckBt22wpAHSSTKMGwiCvq",
+    "transparent_address_owner": "Zcash Foundation (Public Known Donation Address)"
+  },
+  "account_parameters": {
+    "account_name": "Public-Watch-Only-Audit",
+    "birthday_height": 2500000,
+    "spending_authority": false,
+    "shielded_pool": "Sapling"
+  },
+  "checksum_verification": {
+    "hrp": "zxviews",
+    "bech32_polymod_checksum": "valid",
+    "raw_length_bytes": 169
+  },
+  "verification_instructions": [
+    "1. In YWallet / Zingo, select 'New Account' -> 'Restore Watch-Only / Viewing Key'.",
+    "2. Paste the `sapling_extended_fvk` string above.",
+    "3. Set birthday height to 2500000.",
+    "4. Connect the wallet to the local bridge endpoint: 127.0.0.1:9067.",
+    "5. Observe wallet rescanning blocks from 2500000 to 2500009 entirely through the local SQLite store without upstream selective query leakage."
+  ]
+}

@@ -339,31 +339,38 @@ The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and interna
 
 ## 11. Performance & Operating Resource Metrics
 
-Measure sync times, network ingress volume, and process memory using the built-in benchmark tool and automated audit scripts:
+Measure sync times, verification performance, DB/WAL storage, and gRPC serving latency using the built-in benchmark tool and automated measurement scripts:
 
 ```bash
-# Run acquisition cost benchmark across an interval
-cargo run --release --bin zcash-private-bridge -- benchmark --blocks 10 --config config/bridge.default.toml
+# 1. Run live daemon performance measurement (evaluates both Older and Recent coverage)
+python3 scripts/measure_running_daemon.py
 
-# Run empirical resource measurement script (preserves raw logs to artifacts/)
-./scripts/benchmark_operating_advantage.sh 5 config/bridge.default.toml
+# 2. Run empirical resource measurement script (preserves raw logs to artifacts/)
+./scripts/benchmark_operating_advantage.sh 10 config/bridge.default.toml
 
-# Verify retrieval privacy and zero selective fallback with raw upstream RPC logging
+# 3. Verify retrieval privacy and zero selective fallback with raw upstream RPC logging
 ./scripts/verify_retrieval_privacy.sh
 ```
 
-### Empirical Measured Resource Profile:
-* **Process Memory (RSS):** **~13.5 MB peak RSS** (empirically measured on Linux x86_64 via kernel child process `ru_maxrss`).
-* **Ingress Data Transfer:** **~181 KB for 5 mainnet blocks** (38 upstream RPC calls fetching 6 compact blocks and 31 full transactions unconditionally).
-* **Local Storage Growth:** Proportional to synchronized interval (~14 KB per block with typical transaction density).
-* **Client Serving Latency:** Local SQLite lookups complete in **< 50 ms** over loopback gRPC.
+### Empirical Measured Resource Profile (Live Running Daemon):
+*All figures below are directly reconciled with [`artifacts/recent_vs_older_coverage.json`](artifacts/recent_vs_older_coverage.json) and [`artifacts/daemon_storage_breakdown.txt`](artifacts/daemon_storage_breakdown.txt).*
+* **Process Memory (RSS):** **14.82 MB – 15.55 MB peak RSS** (empirically measured on Linux x86_64 during live synchronization, verification, and gRPC serving).
+* **Sync & Cryptographic Verification Speed:** **17.01 s** (NU5: 10 blocks, 39 txs) to **23.02 s** (NU6: 10 blocks, 66 txs) over live mainnet.
+* **Local Storage Footprint (DB + WAL + SHM):** **639.55 KB** (NU5) to **921.19 KB** (NU6) total disk storage for 10-block windows including full transaction payloads.
+* **Client Serving Latency:** Local SQLite lookups average **4.50 ms – 4.83 ms** over loopback gRPC (max 24–33 ms when batch-serving 39–66 transactions).
 * **Offline Rescan Capability:** Fully cached intervals serve subsequent wallet scans with **0 upstream network requests**.
 
 ### Comparison Against Documented Full Node Baseline:
-* **Zebra + lightwalletd Baseline:** Running a full archival validator requires downloading and validating the entire Zcash blockchain history from Genesis (~200 GB NVMe storage, 4–8 GB RAM minimum specification per Zcash Foundation documentation).
-* **PRB Windowed Scope:** Rather than maintaining full historical archival state, PRB synchronizes only the user-configured birthday interval needed for current receiving, running in low-resource environments (laptops, standard VMs) without full chain download.
+* **Zebra + lightwalletd Baseline (Documented Specs):** Running a full archival validator requires downloading and validating the entire Zcash blockchain history from Genesis (~200 GB NVMe storage, 4–8 GB RAM minimum specification per Zcash Foundation documentation).
+* **PRB Windowed Scope (Empirical Prototype):** Rather than maintaining full historical archival state, PRB synchronizes only the user-configured birthday interval needed for current receiving, running in lightweight environments (laptops, standard VMs) without full chain download.
+* **Evaluation Status:** This update is presented as an in-progress milestone evaluation (Milestone 1: Synthetic Protocol Conformance & Live Bridge Daemon Empirical Telemetry), not as completed final validation.
 
-For raw experiment logs, watch-only test fixtures, and offline rescan traces, see the [Grant Evaluation & Operating Advantage Report](docs/GRANT_EVALUATION.md) and [Fixtures Directory](docs/fixtures/).
+For raw experiment logs, watch-only test fixtures, and offline rescan traces, see:
+* [Grant Evaluation & Operating Advantage Report](docs/GRANT_EVALUATION.md)
+* [Wallet State Comparison (lightwalletd vs PRB)](docs/WALLET_STATE_COMPARISON.md)
+* [Public Watch-Only Fixture (ZIP-32 Derivation)](docs/fixtures/public_watch_only_fixture.json)
+* [Synthetic Protocol Test Fixture](docs/fixtures/safe_watch_only_fixture.json)
+* [Raw Daemon Storage Breakdown](artifacts/daemon_storage_breakdown.txt)
 
 ---
 
