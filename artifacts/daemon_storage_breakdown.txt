@@ -1,34 +1,34 @@
 === ZCASH PRIVATE RECEIVE BRIDGE: LIVE DAEMON STORAGE & WAL BREAKDOWN ===
 
 --- Coverage Window: older_historical_nu5 (Blocks 2500000..=2500099, 100 blocks) ---
-Sync & Verification Duration:  35.02 s
-Peak Process RSS:              18.84 MB
+Sync & Verification Duration:  56.04 s
+Peak Process RSS:              18.7 MB
 Storage Pre-Shutdown (Active WAL):
   - bridge.db-shm: 32768 bytes (32.00 KB)
-  - bridge.db-wal: 3102392 bytes (3029.68 KB)
+  - bridge.db-wal: 3106512 bytes (3033.70 KB)
   - bridge.db: 4096 bytes (4.00 KB)
-  Total Pre-Shutdown: 3139256 bytes (3065.68 KB)
+  Total Pre-Shutdown: 3143376 bytes (3069.70 KB)
 Storage Post-Shutdown (Checkpointed):
   - bridge.db-shm: 32768 bytes (32.00 KB)
-  - bridge.db-wal: 3102392 bytes (3029.68 KB)
+  - bridge.db-wal: 3106512 bytes (3033.70 KB)
   - bridge.db: 4096 bytes (4.00 KB)
-  Total Post-Shutdown: 3139256 bytes (3065.68 KB)
-Serving Average Latency:       74.75 ms
-Serving Max Latency:           714 ms
+  Total Post-Shutdown: 3143376 bytes (3069.70 KB)
+Serving Average Latency:       43.08 ms
+Serving Max Latency:           384 ms
 
 --- Coverage Window: recent_mainnet_tip (Blocks 3516500..=3516599, 100 blocks) ---
-Sync & Verification Duration:  64.06 s
-Peak Process RSS:              24.69 MB
+Sync & Verification Duration:  72.09 s
+Peak Process RSS:              24.04 MB
 Storage Pre-Shutdown (Active WAL):
   - bridge.db-shm: 32768 bytes (32.00 KB)
-  - bridge.db-wal: 7193552 bytes (7024.95 KB)
-  - bridge.db: 7036928 bytes (6872.00 KB)
-  Total Pre-Shutdown: 14263248 bytes (13928.95 KB)
+  - bridge.db-wal: 7197672 bytes (7028.98 KB)
+  - bridge.db: 7041024 bytes (6876.00 KB)
+  Total Pre-Shutdown: 14271464 bytes (13936.98 KB)
 Storage Post-Shutdown (Checkpointed):
   - bridge.db-shm: 32768 bytes (32.00 KB)
-  - bridge.db-wal: 7193552 bytes (7024.95 KB)
-  - bridge.db: 7036928 bytes (6872.00 KB)
-  Total Post-Shutdown: 14263248 bytes (13928.95 KB)
-Serving Average Latency:       81.25 ms
-Serving Max Latency:           683 ms
+  - bridge.db-wal: 7197672 bytes (7028.98 KB)
+  - bridge.db: 7041024 bytes (6876.00 KB)
+  Total Post-Shutdown: 14271464 bytes (13936.98 KB)
+Serving Average Latency:       87.92 ms
+Serving Max Latency:           688 ms
 

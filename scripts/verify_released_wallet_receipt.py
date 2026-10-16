@@ -2,7 +2,7 @@
 """
 verify_released_wallet_receipt.py
 
-Executes an unchanged, officially released Zcash wallet binary (Zingo CLI 0.1.1)
+Executes a tested Zingo CLI build (zingolib_v3.0.0-57-g45d4fc7f)
 against an authentic confirmed shielded receipt with a decrypted memo on a live Zebra node.
 Performs:
 1. RUN 1: Sync directly against standard upstream lightwalletd (recording baseline wallet database state).
@@ -84,18 +84,18 @@ def main():
     bin_sha256 = get_file_sha256(ZINGO_BIN)
 
     log("================================================================================")
-    log("  ZCASH UNCHANGED RELEASED WALLET (ZINGO CLI 0.1.1) RECEIPT & PARITY AUDIT      ")
+    log("  ZCASH TESTED WALLET BUILD (ZINGO CLI) RECEIPT & PARITY AUDIT                  ")
     log("================================================================================")
     log(f"Wallet Binary:     {ZINGO_BIN}")
     log(f"Binary SHA256:     {bin_sha256}")
-    log(f"Release Source:    {ZINGO_RELEASE_REPO} (tag: {ZINGO_RELEASE_TAG})")
-    log(f"Source Git Commit: {ZINGO_GIT_COMMIT}")
+    log(f"Build Source:      {ZINGO_RELEASE_REPO} (commit: {ZINGO_GIT_COMMIT[:10]})")
+    log(f"Exact Build Info:  Development build 57 commits after tag {ZINGO_RELEASE_TAG}")
     
     ver_code, ver_out, ver_err = run_wallet_cmd("/tmp", "http://127.0.0.1:9067", ["--nosync", "version"])
     assert ver_code == 0, f"Failed to query wallet version: {ver_err}"
     version_line = [l.strip() for l in ver_out.splitlines() if "zingolib" in l]
     wallet_ver_str = version_line[0] if version_line else ver_out.strip()
-    log(f"Wallet Version:    Zingo CLI 0.1.1 ({wallet_ver_str})")
+    log(f"Wallet Version:    {wallet_ver_str}")
     log(f"Confirmed TxID:    {EXPECTED_TXID}")
     
     # Compute reversed TxID for trace byte-order checks
@@ -114,7 +114,7 @@ def main():
     subprocess.run(["rm", "-rf", upstream_dir], check=True)
     os.makedirs(upstream_dir, exist_ok=True)
 
-    log(">>> RUN 1: Syncing Unchanged Released Wallet Directly Against Upstream lightwalletd")
+    log(">>> RUN 1: Syncing Tested Zingo Build Directly Against Upstream lightwalletd")
     log(f"          Endpoint: http://127.0.0.1:9067 (Native Lightwalletd)")
     
     # Initialize wallet from UFVK with birthday 200
@@ -234,16 +234,21 @@ max_mempool_entries = 100
     )
     assert init_code == 0, f"Failed to initialize wallet pointing to PRB: {init_err}"
 
-    # Read upstream trace before wallet sync
+    # Read upstream trace before wallet sync (reject missing or empty traces)
     def get_trace_records(path):
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Required upstream trace file does not exist at {path}!")
         recs = []
-        if os.path.exists(path):
-            with open(path) as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        try: recs.append(json.loads(line))
-                        except: pass
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        recs.append(json.loads(line))
+                    except Exception as e:
+                        raise ValueError(f"Corrupted trace line in {path}: {line}") from e
+        if not recs:
+            raise ValueError(f"Required upstream trace at {path} is empty! No RPC calls were recorded.")
         return recs
 
     trace_before = get_trace_records(prb_trace)
@@ -347,7 +352,7 @@ max_mempool_entries = 100
     # --------------------------------------------------------------------------
     # RUN 3: Deep Database Export Comparison
     # --------------------------------------------------------------------------
-    log(">>> RUN 3: Deep Equality Verification of Actual Released Wallet Databases")
+    log(">>> RUN 3: Deep Equality Verification of Tested Zingo Build Databases")
     
     notes_match = (upstream_notes_json == prb_notes_json)
     messages_match = (upstream_msg_json == prb_msg_json)
@@ -363,10 +368,11 @@ max_mempool_entries = 100
 
     log("")
     log("================================================================================")
-    log("[SUCCESS] EMPIRICAL PROOF OF RELEASED WALLET RECEIPT & PRIVACY ADVANTAGE:")
-    log(f"  1. Unchanged official released binary ({ZINGO_BIN}) executed.")
+    log("[SUCCESS] EMPIRICAL PROOF OF TESTED WALLET RECEIPT & PRIVACY ADVANTAGE:")
+    log(f"  1. Tested Zingo build ({ZINGO_BIN}) executed.")
+    log(f"     - Exact Build: {wallet_ver_str} (57 commits past {ZINGO_RELEASE_TAG})")
     log(f"     - Binary SHA256: {bin_sha256}")
-    log(f"     - Release Source: {ZINGO_RELEASE_REPO} (tag: {ZINGO_RELEASE_TAG})")
+    log(f"     - Build Source: {ZINGO_RELEASE_REPO} (commit {ZINGO_GIT_COMMIT[:10]})")
     log(f"  2. Confirmed note at block {EXPECTED_HEIGHT} discovered by trial decryption.")
     log(f"     - Amount: {EXPECTED_ZATOSHIS} zatoshis (0.50000000 ZEC) verified.")
     log(f"  3. Memo \"{EXPECTED_MEMO}\" decrypted successfully.")

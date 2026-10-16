@@ -1,55 +1,55 @@
 {
-  "timestamp_utc": "2026-10-16T00:08:54Z",
+  "timestamp_utc": "2026-10-16T22:23:55Z",
   "evaluations": [
     {
       "coverage_name": "older_historical_nu5",
       "start_height": 2500000,
       "end_height": 2500099,
       "block_count": 100,
-      "sync_and_verification_seconds": 35.02,
-      "peak_rss_mb": 18.84,
-      "pre_shutdown_storage_bytes": 3139256,
+      "sync_and_verification_seconds": 56.04,
+      "peak_rss_mb": 18.7,
+      "pre_shutdown_storage_bytes": 3143376,
       "pre_shutdown_breakdown": {
         "bridge.db-shm": 32768,
-        "bridge.db-wal": 3102392,
+        "bridge.db-wal": 3106512,
         "bridge.db": 4096
       },
-      "post_shutdown_storage_bytes": 3139256,
+      "post_shutdown_storage_bytes": 3143376,
       "post_shutdown_breakdown": {
         "bridge.db-shm": 32768,
-        "bridge.db-wal": 3102392,
+        "bridge.db-wal": 3106512,
         "bridge.db": 4096
       },
       "network_traffic": {
         "acquisition_upstream_rpc_calls": 554,
-        "acquisition_upstream_ingress_bytes": 2337015,
-        "acquisition_upstream_ingress_mb": 2.229,
+        "acquisition_upstream_ingress_bytes": 2339057,
+        "acquisition_upstream_ingress_mb": 2.231,
         "acquisition_calls_by_method": {
-          "GetLatestBlock": 2,
+          "GetLatestBlock": 1,
           "GetBlock": 100,
           "GetTransaction": 448,
-          "GetTreeState": 2,
+          "GetTreeState": 3,
           "GetSubtreeRoots": 2
         },
-        "serving_phase_measured_upstream_calls": 5,
+        "serving_phase_measured_upstream_calls": 1,
         "serving_phase_calls_by_method": {
-          "GetBlock": 5
+          "GetLatestBlock": 1
         },
         "client_selective_queries_leaked_upstream": 0,
         "process_io": {
-          "rchar": 114175,
-          "wchar": 3312447,
+          "rchar": 114224,
+          "wchar": 3316913,
           "syscr": 68,
-          "syscw": 3682,
-          "read_bytes": 163840,
-          "write_bytes": 3366912,
+          "syscw": 3729,
+          "read_bytes": 16384,
+          "write_bytes": 3330048,
           "cancelled_write_bytes": 0
         },
         "raw_trace_artifact": "/mnt/data/Projects/zcash_private_bridge/artifacts/raw_upstream_trace_older_historical_nu5.jsonl"
       },
       "probe_executed_rpcs": 12,
-      "serving_avg_latency_ms": 74.75,
-      "serving_max_latency_ms": 714,
+      "serving_avg_latency_ms": 43.08,
+      "serving_max_latency_ms": 384,
       "probe_all_passed": true,
       "probe_details": [
         {
@@ -58,7 +58,7 @@
           "expect": "OK",
           "outcome": "chain=main branch=c2d6d0b4 upgrade=NU5 height=2500099",
           "pass": true,
-          "elapsed_ms": 14
+          "elapsed_ms": 0
         },
         {
           "rpc": "GetLatestBlock",
@@ -66,7 +66,7 @@
           "expect": "OK",
           "outcome": "height=2500099",
           "pass": true,
-          "elapsed_ms": 5
+          "elapsed_ms": 0
         },
         {
           "rpc": "GetBlockRange",
@@ -74,7 +74,7 @@
           "expect": "100 blocks",
           "outcome": "blocks=100 txs=448 sapling_outputs=139 orchard_actions=398",
           "pass": true,
-          "elapsed_ms": 159
+          "elapsed_ms": 128
         },
         {
           "rpc": "GetTreeState",
@@ -82,7 +82,7 @@
           "expect": "OK",
           "outcome": "height=2500000 sapling_tree_len=1156 orchard_tree_len=964",
           "pass": true,
-          "elapsed_ms": 1
+          "elapsed_ms": 0
         },
         {
           "rpc": "GetTreeState",
@@ -98,7 +98,7 @@
           "expect": "OK",
           "outcome": "roots=1117",
           "pass": true,
-          "elapsed_ms": 3
+          "elapsed_ms": 2
         },
         {
           "rpc": "GetSubtreeRoots",
@@ -114,7 +114,7 @@
           "expect": "all served locally",
           "outcome": "served=448 bytes=2035786 failures=0",
           "pass": true,
-          "elapsed_ms": 714
+          "elapsed_ms": 384
         },
         {
           "rpc": "GetTransaction",
@@ -122,7 +122,7 @@
           "expect": "NotFound",
           "outcome": "NotFound: Transaction eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee not found in local verified coverage. Zero-fallback policy active.",
           "pass": true,
-          "elapsed_ms": 0
+          "elapsed_ms": 1
         },
         {
           "rpc": "GetBlock",
@@ -130,7 +130,7 @@
           "expect": "NotFound",
           "outcome": "NotFound: Block at height 2501099 not found in local verified storage",
           "pass": true,
-          "elapsed_ms": 0
+          "elapsed_ms": 1
         },
         {
           "rpc": "GetTreeState",
@@ -155,50 +155,51 @@
       "start_height": 3516500,
       "end_height": 3516599,
       "block_count": 100,
-      "sync_and_verification_seconds": 64.06,
-      "peak_rss_mb": 24.69,
-      "pre_shutdown_storage_bytes": 14263248,
+      "sync_and_verification_seconds": 72.09,
+      "peak_rss_mb": 24.04,
+      "pre_shutdown_storage_bytes": 14271464,
       "pre_shutdown_breakdown": {
         "bridge.db-shm": 32768,
-        "bridge.db-wal": 7193552,
-        "bridge.db": 7036928
+        "bridge.db-wal": 7197672,
+        "bridge.db": 7041024
       },
-      "post_shutdown_storage_bytes": 14263248,
+      "post_shutdown_storage_bytes": 14271464,
       "post_shutdown_breakdown": {
         "bridge.db-shm": 32768,
-        "bridge.db-wal": 7193552,
-        "bridge.db": 7036928
+        "bridge.db-wal": 7197672,
+        "bridge.db": 7041024
       },
       "network_traffic": {
-        "acquisition_upstream_rpc_calls": 988,
-        "acquisition_upstream_ingress_bytes": 6173049,
-        "acquisition_upstream_ingress_mb": 5.887,
+        "acquisition_upstream_rpc_calls": 987,
+        "acquisition_upstream_ingress_bytes": 6169722,
+        "acquisition_upstream_ingress_mb": 5.884,
         "acquisition_calls_by_method": {
-          "GetLatestBlock": 2,
-          "GetBlock": 101,
+          "GetLatestBlock": 1,
+          "GetBlock": 100,
           "GetTransaction": 881,
-          "GetTreeState": 2,
+          "GetTreeState": 3,
           "GetSubtreeRoots": 2
         },
-        "serving_phase_measured_upstream_calls": 6,
+        "serving_phase_measured_upstream_calls": 5,
         "serving_phase_calls_by_method": {
-          "GetBlock": 6
+          "GetLatestBlock": 1,
+          "GetBlock": 4
         },
         "client_selective_queries_leaked_upstream": 0,
         "process_io": {
-          "rchar": 7265789,
-          "wchar": 50694571,
-          "syscr": 1814,
-          "syscw": 26211,
-          "read_bytes": 0,
-          "write_bytes": 14680064,
+          "rchar": 7269934,
+          "wchar": 50716417,
+          "syscr": 1815,
+          "syscw": 26332,
+          "read_bytes": 20480,
+          "write_bytes": 14737408,
           "cancelled_write_bytes": 77824
         },
         "raw_trace_artifact": "/mnt/data/Projects/zcash_private_bridge/artifacts/raw_upstream_trace_recent_mainnet_tip.jsonl"
       },
       "probe_executed_rpcs": 12,
-      "serving_avg_latency_ms": 81.25,
-      "serving_max_latency_ms": 683,
+      "serving_avg_latency_ms": 87.92,
+      "serving_max_latency_ms": 688,
       "probe_all_passed": true,
       "probe_details": [
         {
@@ -207,7 +208,7 @@
           "expect": "OK",
           "outcome": "chain=main branch=c8e71050 upgrade=NU6 height=3516599",
           "pass": true,
-          "elapsed_ms": 1
+          "elapsed_ms": 0
         },
         {
           "rpc": "GetLatestBlock",
@@ -215,7 +216,7 @@
           "expect": "OK",
           "outcome": "height=3516599",
           "pass": true,
-          "elapsed_ms": 3
+          "elapsed_ms": 4
         },
         {
           "rpc": "GetBlockRange",
@@ -223,7 +224,7 @@
           "expect": "100 blocks",
           "outcome": "blocks=100 txs=881 sapling_outputs=46 orchard_actions=66",
           "pass": true,
-          "elapsed_ms": 285
+          "elapsed_ms": 360
         },
         {
           "rpc": "GetTreeState",
@@ -263,7 +264,7 @@
           "expect": "all served locally",
           "outcome": "served=881 bytes=5682809 failures=0",
           "pass": true,
-          "elapsed_ms": 683
+          "elapsed_ms": 688
         },
         {
           "rpc": "GetTransaction",

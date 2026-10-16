@@ -1,53 +1,53 @@
-=== ZCASH PRIVATE RECEIVE BRIDGE: REALISTIC CATCH-UP & NETWORK TRAFFIC AUDIT ===
+=== ZCASH PRIVATE RECEIVE BRIDGE: PRELIMINARY 100-BLOCK SAMPLE RUN ===
 
 --- Coverage Window: older_historical_nu5 (Blocks 2500000..=2500099, 100 blocks) ---
-Acquisition Ingress Bytes:     2337015 bytes (2.229 MB)
+Acquisition Ingress Bytes:     2339057 bytes (2.231 MB)
 Acquisition Upstream RPC Calls:554
 Acquisition Calls by Method:
   - GetBlock: 100 calls
-  - GetLatestBlock: 2 calls
+  - GetLatestBlock: 1 calls
   - GetSubtreeRoots: 2 calls
   - GetTransaction: 448 calls
-  - GetTreeState: 2 calls
+  - GetTreeState: 3 calls
 Process Level I/O (/proc/io):
   - cancelled_write_bytes: 0
-  - rchar: 114175
-  - read_bytes: 163840
+  - rchar: 114224
+  - read_bytes: 16384
   - syscr: 68
-  - syscw: 3682
-  - wchar: 3312447
-  - write_bytes: 3366912
-Measured Serving Upstream Calls: 5
-Serving Calls by Method:       {'GetBlock': 5}
+  - syscw: 3729
+  - wchar: 3316913
+  - write_bytes: 3330048
+Measured Serving Upstream Calls: 1
+Serving Calls by Method:       {'GetLatestBlock': 1}
 Client Selective Leakage:      0 calls (measured from raw trace: 0 forwarded single-tx queries, 0 address queries; 100% of client queries served from verified SQLite)
 Raw Trace Retained:            /mnt/data/Projects/zcash_private_bridge/artifacts/raw_upstream_trace_older_historical_nu5.jsonl
 Probe Verification Status:     All 12 RPCs PASSED (Exit Code: 0)
 
 --- Coverage Window: recent_mainnet_tip (Blocks 3516500..=3516599, 100 blocks) ---
-Acquisition Ingress Bytes:     6173049 bytes (5.887 MB)
-Acquisition Upstream RPC Calls:988
+Acquisition Ingress Bytes:     6169722 bytes (5.884 MB)
+Acquisition Upstream RPC Calls:987
 Acquisition Calls by Method:
-  - GetBlock: 101 calls
-  - GetLatestBlock: 2 calls
+  - GetBlock: 100 calls
+  - GetLatestBlock: 1 calls
   - GetSubtreeRoots: 2 calls
   - GetTransaction: 881 calls
-  - GetTreeState: 2 calls
+  - GetTreeState: 3 calls
 Process Level I/O (/proc/io):
   - cancelled_write_bytes: 77824
-  - rchar: 7265789
-  - read_bytes: 0
-  - syscr: 1814
-  - syscw: 26211
-  - wchar: 50694571
-  - write_bytes: 14680064
-Measured Serving Upstream Calls: 6
-Serving Calls by Method:       {'GetBlock': 6}
+  - rchar: 7269934
+  - read_bytes: 20480
+  - syscr: 1815
+  - syscw: 26332
+  - wchar: 50716417
+  - write_bytes: 14737408
+Measured Serving Upstream Calls: 5
+Serving Calls by Method:       {'GetLatestBlock': 1, 'GetBlock': 4}
 Client Selective Leakage:      0 calls (measured from raw trace: 0 forwarded single-tx queries, 0 address queries; 100% of client queries served from verified SQLite)
 Raw Trace Retained:            /mnt/data/Projects/zcash_private_bridge/artifacts/raw_upstream_trace_recent_mainnet_tip.jsonl
 Probe Verification Status:     All 12 RPCs PASSED (Exit Code: 0)
 
 [NOTE ON SAMPLE LIMITATION]
 The 100-block runs above represent short preliminary catch-up samples. They demonstrate
-windowed resource consumption during limited receiving intervals, but do not represent
-full multi-thousand-block synchronization benchmarks or long-term operational cost profiles.
-
+windowed resource consumption during limited receiving intervals, but have NOT established
+realistic restoration costs for full wallet lifecycles or operational superiority over Zebra
+plus lightwalletd.

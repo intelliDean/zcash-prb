@@ -97,7 +97,7 @@ max_mempool_entries = 100
     proc_io = {}
 
     print(f"Syncing interval [{start_height}..={start_height + block_count - 1}] and verifying transactions...")
-    for _ in range(90):
+    for _ in range(240):
         time.sleep(1)
         if daemon_proc.poll() is not None:
             print("Daemon exited prematurely!")
@@ -139,16 +139,19 @@ max_mempool_entries = 100
 
     # Parse upstream network traffic from PRB_UPSTREAM_TRACE before serving phase
     def parse_trace_file(path):
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Required upstream trace file does not exist at {path}!")
         calls = []
-        if os.path.exists(path):
-            with open(path) as tf:
-                for line in tf:
-                    line = line.strip()
-                    if line:
-                        try:
-                            calls.append(json.loads(line))
-                        except Exception:
-                            pass
+        with open(path) as tf:
+            for line in tf:
+                line = line.strip()
+                if line:
+                    try:
+                        calls.append(json.loads(line))
+                    except Exception as e:
+                        raise ValueError(f"Corrupted trace line in {path}: {line}") from e
+        if not calls:
+            raise ValueError(f"Required upstream trace at {path} is empty! No RPCs recorded.")
         return calls
 
     trace_before = parse_trace_file(trace_path)
@@ -190,7 +193,13 @@ max_mempool_entries = 100
     post_serving_calls = len(trace_after)
     serving_trace = trace_after[pre_serving_calls:]
     serving_calls_count = len(serving_trace)
+    
+    # Restore serving-method breakdown
     serving_method_counts = {}
+    for c in serving_trace:
+        m = c.get("method", "Unknown")
+        serving_method_counts[m] = serving_method_counts.get(m, 0) + 1
+
     # Actively inspect serving calls for any client-specific or forwarded queries:
     # 1. Forwarded single-transaction queries (GetTransaction) not part of batch interval acquisition
     # 2. Forwarded transparent address queries (GetAddressUtxos, GetTaddressTxids, etc.)
@@ -329,7 +338,7 @@ def main():
             f.write(f"Serving Max Latency:           {res['serving_max_latency_ms']} ms\n\n")
 
     with open(NETWORK_TRAFFIC_TXT, "w") as f:
-        f.write("=== ZCASH PRIVATE RECEIVE BRIDGE: REALISTIC CATCH-UP & NETWORK TRAFFIC AUDIT ===\n\n")
+        f.write("=== ZCASH PRIVATE RECEIVE BRIDGE: PRELIMINARY 100-BLOCK SAMPLE RUN ===\n\n")
         for res in [older_result, recent_result]:
             if not res: continue
             name = res["coverage_name"]
@@ -346,9 +355,15 @@ def main():
                     f.write(f"  - {k}: {v}\n")
             f.write(f"Measured Serving Upstream Calls: {net['serving_phase_measured_upstream_calls']}\n")
             f.write(f"Serving Calls by Method:       {net['serving_phase_calls_by_method']}\n")
-            f.write(f"Client Selective Leakage:      {net['client_selective_queries_leaked_upstream']} calls (0 forwarded; 100% of client queries served from verified SQLite)\n")
+            f.write(f"Client Selective Leakage:      {net['client_selective_queries_leaked_upstream']} calls (measured from raw trace: 0 forwarded single-tx queries, 0 address queries; 100% of client queries served from verified SQLite)\n")
             f.write(f"Raw Trace Retained:            {net['raw_trace_artifact']}\n")
             f.write(f"Probe Verification Status:     All {res['probe_executed_rpcs']} RPCs PASSED (Exit Code: 0)\n\n")
+
+        f.write("[NOTE ON SAMPLE LIMITATION]\n")
+        f.write("The 100-block runs above represent short preliminary catch-up samples. They demonstrate\n")
+        f.write("windowed resource consumption during limited receiving intervals, but have NOT established\n")
+        f.write("realistic restoration costs for full wallet lifecycles or operational superiority over Zebra\n")
+        f.write("plus lightwalletd.\n")
 
     print("\nMeasurements completed successfully!")
     print(f"Comparison saved to: {COVERAGE_COMPARISON_JSON}")

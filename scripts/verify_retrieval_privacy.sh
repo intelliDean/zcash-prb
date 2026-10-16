@@ -20,8 +20,8 @@ export PRB_UPSTREAM_TRACE="$(pwd)/${UPSTREAM_TRACE}"
 # Run the automated retrieval privacy audit test
 cargo test --test privacy_leakage -- --nocapture
 
-if [ ! -f "${UPSTREAM_TRACE}" ]; then
-    echo "ERROR: Upstream RPC trace log was not generated!" >&2
+if [ ! -f "${UPSTREAM_TRACE}" ] || [ ! -s "${UPSTREAM_TRACE}" ]; then
+    echo "ERROR: Upstream RPC trace log was not generated or is empty!" >&2
     exit 1
 fi
 

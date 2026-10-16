@@ -105,17 +105,17 @@ While the resulting SQLite database state in the wallet is **bit-for-bit identic
 
 ---
 
-## 3. Evidence Artifacts: Synthetic Protocol Tests vs. Released Wallet Execution
+## 3. Evidence Artifacts: Synthetic Protocol Tests vs. Tested Wallet Build Execution
 
 To ensure complete transparency and reproducibility, the evidence artifacts are strictly divided into:
 1. **Synthetic Protocol Test Vectors**: Automated mock note scanner test vectors validating internal protocol correctness and multi-pool data structures.
-2. **Actual Released Wallet Execution**: Execution of an unchanged, official release of a Zcash light client (`Zingo CLI 0.1.1`) against a live confirmed receipt, with side-by-side database state parity.
+2. **Tested Zingo CLI Build Execution**: Execution of the tested Zingo CLI development build (`zingolib_v3.0.0-57-g45d4fc7f`, commit `fb58a162cf`, built from `https://github.com/zingolabs/zingolib`) against a live confirmed receipt, with side-by-side database state parity.
 
 ---
 
-### A. Live Released Wallet Receipt & Database State Parity (Zingo CLI 0.1.1)
+### A. Live Wallet Receipt & Database State Parity (Tested Zingo CLI Build)
 
-An unchanged official release of `zingo-cli` (v0.1.1) was run against a live Zebra devnet:
+The tested Zingo CLI build (`/home/dean/.local/bin/zingo-cli`, version `zingolib_v3.0.0-57-g45d4fc7f`, SHA-256 `ec1d9f339c5b23a6611dffbaf29a64c3c26232e0306448370107986362a6df27`, built from `https://github.com/zingolabs/zingolib` at commit `fb58a162cf`, 57 commits after tag `zingolib_v3.0.0`) was run against a live Zebra devnet:
 * **Confirmed Receipt Transaction:**
   * **TxID:** `b9e7da7538ff7b864a25978165b2eb9612a541121e667600dbacbef7d5c3e4dc`
   * **Inclusion Block:** Height 226
@@ -155,8 +155,11 @@ The automated unit test harness (`crates/bridge-testkit/tests/wallet_receipt_dem
 
 ## 4. Reproduction & Verification Commands
 
-### 1. Reproduce Live Released Wallet Parity
-Run the automated end-to-end verification script using the official `zingo-cli` binary:
+### 1. Reproduce Live Wallet Parity with Tested Zingo Build
+Run the automated end-to-end verification script using the tested `zingo-cli` build:
+```bash
+python3 scripts/verify_released_wallet_receipt.py
+```
 ```bash
 python3 scripts/verify_released_wallet_receipt.py
 ```

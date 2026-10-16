@@ -42,9 +42,9 @@ For cryptographic audit, public wallet import, and external reproduction:
 * **Transparent Public Address:** `t1bWjEzNFqTVz8ckBt22wpAHSSTKMGwiCvq` (Zcash Foundation public donation address).
 * **Security:** Contains strictly zero private spending keys. Safe for public repository hosting and reproducible wallet imports.
 
-### C. Actual Released Wallet Receipt Demonstration & Parity Audit
-To demonstrate the actual user workflow—running an official, unchanged released wallet against an authentic confirmed receipt, discovering notes, decrypting memos, and proving bit-for-bit database parity without selective leakage:
-* **Unchanged Official Binary:** [`/home/dean/.local/bin/zingo-cli`](https://github.com/zingolabs/zingolib) (Zingo CLI v0.1.1, extracted directly from official release container `zeckit/zingo:latest`).
+### C. Live Wallet Receipt Demonstration & Parity Audit with Tested Zingo Build
+To demonstrate the actual user workflow—running the tested Zingo client build against an authentic confirmed receipt, discovering notes, decrypting memos, and proving bit-for-bit database parity without selective leakage:
+* **Tested Zingo CLI Build:** [`/home/dean/.local/bin/zingo-cli`](https://github.com/zingolabs/zingolib) (Version: `zingolib_v3.0.0-57-g45d4fc7f`, built from `https://github.com/zingolabs/zingolib` at commit `fb58a162cf`, 57 commits after release tag `zingolib_v3.0.0`; SHA-256: `ec1d9f339c5b23a6611dffbaf29a64c3c26232e0306448370107986362a6df27`).
 * **Confirmed Shielded Receipt:** Block `226` on live Zebra + Lightwalletd devnet.
   * **TxID:** `b9e7da7538ff7b864a25978165b2eb9612a541121e667600dbacbef7d5c3e4dc`
   * **Amount:** `50,000,000` zatoshis (0.50000000 ZEC, Orchard Shielded Pool)
@@ -92,19 +92,19 @@ The measurements track the full daemon lifecycle:
 | **Blocks Evaluated** | **100 blocks** | **100 blocks** | `recent_vs_older_coverage.json` |
 | **Active Consensus Branch** | `c2d6d0b4` (NU5) | `c8e71050` (NU6) | `recent_vs_older_coverage.json` |
 | **Transactions Ingested & Verified** | 448 full transactions | 881 full transactions | `birthday_to_scan_end_network_traffic.txt` |
-| **Sync & Verification Duration** | **35.02 seconds** | **64.06 seconds** | `daemon_storage_breakdown.txt` |
-| **Peak Process RSS** | **18.84 MB** | **24.69 MB** | `daemon_storage_breakdown.txt` |
-| **`bridge.db` Size** | 4,096 bytes (4.00 KB) | 7,036,928 bytes (7.04 MB) | `daemon_storage_breakdown.txt` |
-| **`bridge.db-wal` Size** | 3,102,392 bytes (3.10 MB) | 7,193,552 bytes (7.19 MB) | `daemon_storage_breakdown.txt` |
+| **Sync & Verification Duration** | **56.04 seconds** | **72.09 seconds** | `daemon_storage_breakdown.txt` |
+| **Peak Process RSS** | **18.70 MB** | **24.04 MB** | `daemon_storage_breakdown.txt` |
+| **`bridge.db` Size** | 4,096 bytes (4.00 KB) | 7,041,024 bytes (7.04 MB) | `daemon_storage_breakdown.txt` |
+| **`bridge.db-wal` Size** | 3,106,512 bytes (3.11 MB) | 7,197,672 bytes (7.20 MB) | `daemon_storage_breakdown.txt` |
 | **`bridge.db-shm` Size** | 32,768 bytes (32.00 KB) | 32,768 bytes (32.00 KB) | `daemon_storage_breakdown.txt` |
-| **Total Storage Footprint (DB+WAL)**| **3,139,256 bytes (3.14 MB)** | **14,263,248 bytes (14.26 MB)** | `daemon_storage_breakdown.txt` |
-| **Upstream Acquisition Ingress** | **2,337,015 bytes (2.23 MB)** | **6,173,049 bytes (5.89 MB)** | `birthday_to_scan_end_network_traffic.txt` |
-| **Acquisition Upstream RPC Calls** | 554 calls (100 blocks, 448 txs) | 988 calls (100 blocks, 881 txs) | `birthday_to_scan_end_network_traffic.txt` |
-| **Serving Phase Upstream Calls** | **5 background calls (`GetBlock`)** | **6 background calls (`GetBlock`)** | `birthday_to_scan_end_network_traffic.txt` |
+| **Total Storage Footprint (DB+WAL)**| **3,143,376 bytes (3.14 MB)** | **14,271,464 bytes (14.27 MB)** | `daemon_storage_breakdown.txt` |
+| **Upstream Acquisition Ingress** | **2,339,057 bytes (2.23 MB)** | **6,169,722 bytes (5.88 MB)** | `birthday_to_scan_end_network_traffic.txt` |
+| **Acquisition Upstream RPC Calls** | 554 calls (100 blocks, 448 txs) | 987 calls (100 blocks, 881 txs) | `birthday_to_scan_end_network_traffic.txt` |
+| **Serving Phase Upstream Calls** | **1 background call (`GetLatestBlock`)** | **5 background calls (`GetLatestBlock`, `GetBlock`)** | `birthday_to_scan_end_network_traffic.txt` |
 | **Client Selective Query Leakage** | **0 calls (100% served locally)** | **0 calls (100% served locally)** | `birthday_to_scan_end_network_traffic.txt` |
 | **Raw Trace Retained** | `raw_upstream_trace_older_historical_nu5.jsonl` | `raw_upstream_trace_recent_mainnet_tip.jsonl` | `birthday_to_scan_end_network_traffic.txt` |
-| **Average gRPC Serving Latency** | **74.75 ms** | **22.33 ms** | `recent_vs_older_coverage.json` |
-| **Max gRPC Serving Latency** | 714 ms | 161 ms | `recent_vs_older_coverage.json` |
+| **Average gRPC Serving Latency** | **43.08 ms** | **87.92 ms** | `recent_vs_older_coverage.json` |
+| **Max gRPC Serving Latency** | 384 ms | 688 ms | `recent_vs_older_coverage.json` |
 | **Probe Tests Passed** | 12 / 12 (100%, Exit Code: 0) | 12 / 12 (100%, Exit Code: 0) | `recent_vs_older_coverage.json` |
 
 ---
@@ -113,12 +113,15 @@ The measurements track the full daemon lifecycle:
 
 To ensure honest reporting, **published Zebra specifications are kept strictly separated from empirical PRB measurements**. No local Zebra instance was run in this benchmark; baseline figures cite official Zcash Foundation and Zebra documentation.
 
+> [!IMPORTANT]
+> **Limitation of Preliminary Samples:** The 100-block samples demonstrate windowed resource consumption during limited receiving intervals. They have **not** established realistic restoration costs for full wallet lifecycles or proven operational superiority over Zebra plus lightwalletd.
+
 | Architectural Dimension | Zebra + lightwalletd (Documented Full-Node Baseline) | Private Receive Bridge (Empirically Measured Window) |
 | :--- | :--- | :--- |
 | **Data Source** | Published Zcash Foundation specifications & Zebra docs | Live Linux x86_64 measurements ([`artifacts/`](../artifacts/)) |
-| **Storage Architecture** | Full historical RocksDB (~200 GB NVMe SSD required) | Windowed SQLite WAL (**3.14 MB to 14.26 MB** per 100-block window) |
-| **Process Memory (RSS)** | 4,096 – 8,192 MB RAM (Documented system requirement) | **18.84 MB – 24.69 MB** (Measured process peak RSS) |
-| **Initial Synchronization** | Full Initial Block Download (Genesis to Tip: hours-to-days) | Windowed acquisition from birthday height (**35.02 – 64.06 seconds** per 100 blocks) |
+| **Storage Architecture** | Full historical RocksDB (~200 GB NVMe SSD required) | Windowed SQLite WAL (**3.14 MB to 14.27 MB** per 100-block window) |
+| **Process Memory (RSS)** | 4,096 – 8,192 MB RAM (Documented system requirement) | **18.70 MB – 24.04 MB** (Measured process peak RSS) |
+| **Initial Synchronization** | Full Initial Block Download (Genesis to Tip: hours-to-days) | Windowed acquisition from birthday height (**56.04 – 72.09 seconds** per 100 blocks) |
 | **Consensus Validation** | Full consensus rules (PoW, Equihash, full scripts, anchors) | Adjacency verification + SHA256d transaction hash validation |
 | **Daemon Architecture** | 2 interacting daemons (`zebrad` + `lightwalletd`) + RPC wiring | 1 standalone self-contained binary (`zcash-private-bridge`) |
 | **Hardware Target** | Dedicated server or desktop with high-capacity storage | Standard consumer laptop, low-power SBC, or lightweight VM |
@@ -133,6 +136,7 @@ The privacy audit script [`scripts/verify_retrieval_privacy.sh`](../scripts/veri
 1. **During Ingestion:** The upstream provider observes public batch requests (`GetBlock`, batch `GetTransaction`, `GetTreeState`, `GetSubtreeRoots`).
 2. **During Wallet Serving:** When clients query `GetTransaction` for specific TxIDs (`tx1`, `tx2`) or un-synced TxIDs, **zero additional upstream RPC calls are emitted**.
 3. **Audit Verification:** The un-synced transaction ID `9999...9999` appears exactly **0 times** in the upstream trace.
+4. **Fail-Closed Trace Validation:** The audit script strictly rejects missing, empty, or unpopulated trace logs before evaluating leakage.
 
 ---
 
@@ -140,8 +144,8 @@ The privacy audit script [`scripts/verify_retrieval_privacy.sh`](../scripts/veri
 
 1. **In-Progress Milestone Scope:**  
    `zcash-private-bridge` is an experimental prototype exploring recipient retrieval privacy. This report demonstrates protocol conformance and architectural resource viability; it is **not** presented as a completed final validation.
-2. **Preliminary Nature of 100-Block Samples:**  
-   The measured 100-block catch-up runs remain short preliminary samples demonstrating windowed resource metrics. They illustrate the operating characteristics of short receiving intervals, but do not represent full multi-thousand-block synchronization benchmarks or long-term operational cost profiles.
+2. **Preliminary Nature of 100-Block Samples & Limited Cost Claims:**  
+   The measured 100-block runs are short preliminary test samples demonstrating windowed resource metrics. They have not established realistic restoration costs for full wallet lifecycles or operational superiority over Zebra plus lightwalletd. Rather than claiming full-node replacement or proven operational superiority, the prototype demonstrates an architecture for windowed retrieval privacy.
 3. **No Transport-Level IP Anonymity:**  
    The bridge prevents the upstream server from learning which specific transactions the user is receiving. However, the upstream server still observes the IP address requesting public interval batches unless the operator routes traffic through Tor or a VPN.
 4. **Windowed Cache vs. Consensus Node:**  
@@ -154,7 +158,7 @@ The privacy audit script [`scripts/verify_retrieval_privacy.sh`](../scripts/veri
 To independently reproduce all measurements and verify the raw logs:
 
 ```bash
-# 1. Run live released wallet receipt & database parity verification (Zingo CLI 0.1.1)
+# 1. Run live wallet receipt & database parity verification (Tested Zingo CLI Build)
 python3 scripts/verify_released_wallet_receipt.py
 
 # 2. Verify bit-for-bit parity between released wallet database exports

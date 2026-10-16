@@ -336,8 +336,8 @@ The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and interna
     Exercises the full light wallet RPC sequence (`GetLightdInfo`, `GetLatestBlock`, `GetBlockRange`, `GetTreeState`, `GetSubtreeRoots`, `GetTransaction`), validates expected failure codes (`NOT_FOUND`, `PERMISSION_DENIED`), drops upstream connectivity, restarts from local SQLite storage, and confirms 100% offline rescan parity.
 12. **Synthetic Protocol Conformance & Mock Note Scanner ([`tests/wallet_receipt_demonstration.rs`](crates/bridge-testkit/tests/wallet_receipt_demonstration.rs)):**
     Exercises note scanning against mock upstream data vectors. Imports the public test viewing key fixture (`zxviews1...`), discovers synthetic Sapling (0.25 ZEC) and Orchard (1.00 ZEC) notes, and verifies matching JSON and SQL exports ([`artifacts/wallet_state_local_prb.json`](artifacts/wallet_state_local_prb.json) and [`docs/fixtures/wallet_state_local_prb.sql`](docs/fixtures/wallet_state_local_prb.sql)) with zero selective query leakage.
-13. **Actual Released Wallet Receipt & Parity Demonstration ([`scripts/verify_released_wallet_receipt.py`](scripts/verify_released_wallet_receipt.py)):**
-    Runs an unchanged official released wallet binary (`Zingo CLI 0.1.1`) against a live confirmed transaction (`b9e7da...`, 0.5 ZEC, memo: `"ZCG Grant Evaluation - Actual Wallet Receipt Parity"`) both directly against standard upstream lightwalletd and through `zcash-private-bridge`. Discovers the note, decrypts the authentic memo, and verifies bit-for-bit parity between actual database exports ([`artifacts/released_wallet_exports/`](artifacts/released_wallet_exports/)) while logging raw upstream traces ([`artifacts/released_wallet_upstream_trace.jsonl`](artifacts/released_wallet_upstream_trace.jsonl)).
+13. **Live Wallet Receipt & Parity Demonstration with Tested Zingo Build ([`scripts/verify_released_wallet_receipt.py`](scripts/verify_released_wallet_receipt.py)):**
+    Runs the exact tested Zingo CLI development build (`zingolib_v3.0.0-57-g45d4fc7f`, commit `45d4fc7f` / `fb58a162cf`, built from `https://github.com/zingolabs/zingolib`) against a live confirmed transaction (`b9e7da...`, 0.5 ZEC, memo: `"ZCG Grant Evaluation - Actual Wallet Receipt Parity"`) both directly against standard upstream lightwalletd and through `zcash-private-bridge`. Discovers the note, decrypts the authentic memo, and verifies bit-for-bit parity between actual database exports ([`artifacts/released_wallet_exports/`](artifacts/released_wallet_exports/)) while logging raw upstream traces ([`artifacts/released_wallet_upstream_trace.jsonl`](artifacts/released_wallet_upstream_trace.jsonl)).
 
 ---
 
@@ -349,7 +349,7 @@ Measure sync times, verification performance, DB/WAL storage, network traffic, a
 # 1. Run live daemon performance & network traffic measurement (100-block windows)
 python3 scripts/measure_running_daemon.py
 
-# 2. Run live released wallet receipt & database parity verification
+# 2. Run live wallet receipt & database parity verification with tested Zingo build
 python3 scripts/verify_released_wallet_receipt.py
 
 # 3. Run empirical resource measurement script (preserves raw logs to artifacts/)
@@ -370,12 +370,12 @@ cargo test --test wallet_receipt_demonstration -- --nocapture
 * **Network Traffic (Ingress):** **2.23 MB across 554 RPCs** (NU5 birthday restoration, 2,337,015 bytes) to **5.89 MB across 988 RPCs** (NU6 tip receiving interval, 6,173,049 bytes).
 * **Client Serving Phase Upstream Overhead:** **5 background polling calls** (older interval) and **6 background polling calls** (recent interval) by daemon scheduler; **0 client-specific queries leaked** (`GetTransaction` = 0, `GetAddressUtxos` = 0). Serving latency averages **74.75 ms – 81.25 ms** over loopback gRPC.
 * **Offline Rescan Capability:** Fully cached intervals serve subsequent wallet scans with **0 upstream network requests**.
-* **Preliminary Nature of Sample Coverage:** These 100-block runs remain short preliminary samples demonstrating windowed resource metrics; they are not generalized claims of full long-running mainnet operational requirements.
+* **Preliminary Nature of Sample Coverage & Limited Cost Claims:** These 100-block runs are short preliminary test samples demonstrating windowed resource consumption during limited receiving intervals. They do **not** establish realistic restoration costs for full wallet lifecycles or operational superiority over a full node setup (Zebra plus lightwalletd).
 
 ### Comparison Against Documented Full Node Baseline:
 * **Zebra + lightwalletd Baseline (Documented Specs):** Running a full archival validator requires downloading and validating the entire Zcash blockchain history from Genesis (~200 GB NVMe storage, 4–8 GB RAM minimum specification per Zcash Foundation documentation).
 * **PRB Windowed Scope (Empirical Prototype):** Rather than maintaining full historical archival state, PRB synchronizes only the user-configured birthday interval needed for current receiving, running in lightweight environments (laptops, standard VMs) without full chain download.
-* **Evaluation Status:** This update is presented as an in-progress milestone evaluation (Milestone 1: Synthetic Protocol Conformance & Live Bridge Daemon Empirical Telemetry), not as completed final validation.
+* **Evaluation Status & Scope Boundaries:** This update is presented as an in-progress milestone evaluation (Milestone 1: Synthetic Protocol Conformance & Live Bridge Daemon Empirical Telemetry), not as completed final validation. The preliminary 100-block samples have not established realistic restoration costs or operational superiority over Zebra plus lightwalletd.
 
 For raw experiment logs, watch-only test fixtures, and offline rescan traces, see:
 * [Grant Evaluation & Operating Advantage Report](docs/GRANT_EVALUATION.md)

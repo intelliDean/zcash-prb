@@ -1,18 +1,18 @@
 ================================================================================
-  ZCASH UNCHANGED RELEASED WALLET (ZINGO CLI 0.1.1) RECEIPT & PARITY AUDIT      
+  ZCASH TESTED WALLET BUILD (ZINGO CLI) RECEIPT & PARITY AUDIT                  
 ================================================================================
 Wallet Binary:     /home/dean/.local/bin/zingo-cli
 Binary SHA256:     ec1d9f339c5b23a6611dffbaf29a64c3c26232e0306448370107986362a6df27
-Release Source:    https://github.com/zingolabs/zingolib (tag: zingolib_v3.0.0)
-Source Git Commit: fb58a162cfb583bc8c405ac962a85405ee1b509b
-Wallet Version:    Zingo CLI 0.1.1 (zingolib_v3.0.0-57-g45d4fc7f)
+Build Source:      https://github.com/zingolabs/zingolib (commit: fb58a162cf)
+Exact Build Info:  Development build 57 commits after tag zingolib_v3.0.0
+Wallet Version:    zingolib_v3.0.0-57-g45d4fc7f
 Confirmed TxID:    b9e7da7538ff7b864a25978165b2eb9612a541121e667600dbacbef7d5c3e4dc
 TxID Trace (LE):   dce4c3d5f7beacdb0076661e1241a51296ebb2658197254a867bff3875dae7b9
 Receipt Height:    Block 226 (Orchard Shielded Pool)
 Expected Amount:   50000000 zatoshis (0.50000000 ZEC)
 Decrypted Memo:    "ZCG Grant Evaluation - Actual Wallet Receipt Parity"
 
->>> RUN 1: Syncing Unchanged Released Wallet Directly Against Upstream lightwalletd
+>>> RUN 1: Syncing Tested Zingo Build Directly Against Upstream lightwalletd
           Endpoint: http://127.0.0.1:9067 (Native Lightwalletd)
   [WALLET] Initialized with Unified Full Viewing Key (Birthday: 200)
   [WALLET] Running sync task against lightwalletd...
@@ -27,36 +27,37 @@ Decrypted Memo:    "ZCG Grant Evaluation - Actual Wallet Receipt Parity"
           Covered Interval:    [199..=249] (Encapsulating Birthday TreeState 199 & Receipt Height 226)
   [DAEMON] Waiting for verified interval acquisition and commitment...
   [DAEMON] Verified interval [199..=249] committed to local SQLite storage.
-  [AUDIT] Upstream trace call count BEFORE wallet queries: 166
+  [AUDIT] Upstream trace call count BEFORE wallet queries: 110
   [WALLET] Running sync task against Local PRB Endpoint (127.0.0.1:9088)...
   [NOTE DISCOVERED] Status: confirmed at block height 226 | Value: 50000000 zatoshis
                     TxID:   b9e7da7538ff7b864a25978165b2eb9612a541121e667600dbacbef7d5c3e4dc
   [MEMO DECRYPTED]  Memo:   "ZCG Grant Evaluation - Actual Wallet Receipt Parity"
   [BALANCE VERIFIED] Confirmed Orchard Balance: 50000000 zatoshis (0.50000000 ZEC)
-  [AUDIT] Upstream trace call count AFTER wallet queries:  186
-  [AUDIT] Total Upstream calls during serving phase:        20
+  [AUDIT] Upstream trace call count AFTER wallet queries:  182
+  [AUDIT] Total Upstream calls during serving phase:        72
   [TRACE RETENTION] Raw trace retained to: /mnt/data/Projects/zcash_private_bridge/artifacts/released_wallet_upstream_trace.jsonl
-  [SERVING CALL BREAKDOWN] Methods during serving: {'GetTransaction': 20}
+  [SERVING CALL BREAKDOWN] Methods during serving: {'GetLatestBlock': 1, 'GetBlock': 51, 'GetTransaction': 20}
   [PRIVACY AUDIT] Upstream calls requesting client TxID (both BE & LE byte orders): 0
   [PRIVACY AUDIT] Upstream selective address forwarding calls:                        0
   [PRIVACY VERDICT] ZERO client-specific transaction/note leakage upstream (100% served locally from SQLite).
 
->>> RUN 3: Deep Equality Verification of Actual Released Wallet Databases
+>>> RUN 3: Deep Equality Verification of Tested Zingo Build Databases
   - Discovered Orchard Notes JSON Parity: 100% IDENTICAL
   - Decrypted Value Transfers / Memos:   100% IDENTICAL
   - Confirmed Balance Parity:            100% IDENTICAL (0.50000000 ZEC)
 
 ================================================================================
-[SUCCESS] EMPIRICAL PROOF OF RELEASED WALLET RECEIPT & PRIVACY ADVANTAGE:
-  1. Unchanged official released binary (/home/dean/.local/bin/zingo-cli) executed.
+[SUCCESS] EMPIRICAL PROOF OF TESTED WALLET RECEIPT & PRIVACY ADVANTAGE:
+  1. Tested Zingo build (/home/dean/.local/bin/zingo-cli) executed.
+     - Exact Build: zingolib_v3.0.0-57-g45d4fc7f (57 commits past zingolib_v3.0.0)
      - Binary SHA256: ec1d9f339c5b23a6611dffbaf29a64c3c26232e0306448370107986362a6df27
-     - Release Source: https://github.com/zingolabs/zingolib (tag: zingolib_v3.0.0)
+     - Build Source: https://github.com/zingolabs/zingolib (commit fb58a162cf)
   2. Confirmed note at block 226 discovered by trial decryption.
      - Amount: 50000000 zatoshis (0.50000000 ZEC) verified.
   3. Memo "ZCG Grant Evaluation - Actual Wallet Receipt Parity" decrypted successfully.
   4. Wallet database exports from native lightwalletd and PRB are 100% identical.
      - Notes JSON, messages/memos JSON, and account balances match byte-for-byte.
-  5. Upstream traffic during serving: 20 background polling RPCs, exactly 0 client-specific queries.
+  5. Upstream traffic during serving: 72 background polling RPCs, exactly 0 client-specific queries.
      - TxID byte-order audit (BE b9e7da7538ff... / LE dce4c3d5f7be...): 0 leaks.
      - Selective single-tx / address query forwarding: 0 calls.
 ================================================================================
