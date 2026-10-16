@@ -191,19 +191,19 @@ max_mempool_entries = 100
     serving_trace = trace_after[pre_serving_calls:]
     serving_calls_count = len(serving_trace)
     serving_method_counts = {}
-    client_selective_leaks = 0
-
-    for c in serving_trace:
-        m = c.get("method", "Unknown")
-        serving_method_counts[m] = serving_method_counts.get(m, 0) + 1
-
-    # In PRB architecture, bridge-server holds only BridgeStorage (no upstream handle).
-    # Client queries (GetTransaction, GetBlockRange, GetTreeState, etc.) are 100% locally served.
-    # Any upstream calls during serving originate exclusively from background interval acquisition.
-    client_selective_leaks = 0
+    # Actively inspect serving calls for any client-specific or forwarded queries:
+    # 1. Forwarded single-transaction queries (GetTransaction) not part of batch interval acquisition
+    # 2. Forwarded transparent address queries (GetAddressUtxos, GetTaddressTxids, etc.)
+    # 3. Cache-miss probe items (e.g. out-of-range txid=ee..ee)
+    client_selective_leaks = sum(
+        1 for c in serving_trace
+        if c.get("method") in ("GetAddressUtxos", "GetTaddressTxids", "GetTaddressTransactions")
+        or ("eeeeeeee" in str(c.get("arg", "")))
+        or (c.get("method") == "GetTransaction" and not str(c.get("arg", "")).startswith("batch_"))
+    )
 
     print(f"Serving Phase Measured Upstream Traffic: {serving_calls_count} background RPCs ({serving_method_counts})")
-    print(f"Client Selective Leakage: {client_selective_leaks} RPCs forwarded upstream (zero selective leakage)")
+    print(f"Client Selective Leakage: {client_selective_leaks} RPCs forwarded upstream (measured from raw trace)")
 
     # Retain raw trace in artifacts
     raw_trace_artifact = os.path.join(ARTIFACTS_DIR, f"raw_upstream_trace_{coverage_name}.jsonl")

@@ -116,9 +116,9 @@ To ensure honest reporting, **published Zebra specifications are kept strictly s
 | Architectural Dimension | Zebra + lightwalletd (Documented Full-Node Baseline) | Private Receive Bridge (Empirically Measured Window) |
 | :--- | :--- | :--- |
 | **Data Source** | Published Zcash Foundation specifications & Zebra docs | Live Linux x86_64 measurements ([`artifacts/`](../artifacts/)) |
-| **Storage Architecture** | Full historical RocksDB (~200 GB NVMe SSD required) | Windowed SQLite WAL (**640 KB to 921 KB** per 10-block window) |
-| **Process Memory (RSS)** | 4,096 – 8,192 MB RAM (Documented system requirement) | **14.82 MB – 15.55 MB** (Measured process peak RSS) |
-| **Initial Synchronization** | Full Initial Block Download (Genesis to Tip: hours-to-days) | Windowed acquisition from birthday height (**17–23 seconds** per 10 blocks) |
+| **Storage Architecture** | Full historical RocksDB (~200 GB NVMe SSD required) | Windowed SQLite WAL (**3.14 MB to 14.26 MB** per 100-block window) |
+| **Process Memory (RSS)** | 4,096 – 8,192 MB RAM (Documented system requirement) | **18.84 MB – 24.69 MB** (Measured process peak RSS) |
+| **Initial Synchronization** | Full Initial Block Download (Genesis to Tip: hours-to-days) | Windowed acquisition from birthday height (**35.02 – 64.06 seconds** per 100 blocks) |
 | **Consensus Validation** | Full consensus rules (PoW, Equihash, full scripts, anchors) | Adjacency verification + SHA256d transaction hash validation |
 | **Daemon Architecture** | 2 interacting daemons (`zebrad` + `lightwalletd`) + RPC wiring | 1 standalone self-contained binary (`zcash-private-bridge`) |
 | **Hardware Target** | Dedicated server or desktop with high-capacity storage | Standard consumer laptop, low-power SBC, or lightweight VM |
@@ -140,9 +140,11 @@ The privacy audit script [`scripts/verify_retrieval_privacy.sh`](../scripts/veri
 
 1. **In-Progress Milestone Scope:**  
    `zcash-private-bridge` is an experimental prototype exploring recipient retrieval privacy. This report demonstrates protocol conformance and architectural resource viability; it is **not** presented as a completed final validation.
-2. **No Transport-Level IP Anonymity:**  
+2. **Preliminary Nature of 100-Block Samples:**  
+   The measured 100-block catch-up runs remain short preliminary samples demonstrating windowed resource metrics. They illustrate the operating characteristics of short receiving intervals, but do not represent full multi-thousand-block synchronization benchmarks or long-term operational cost profiles.
+3. **No Transport-Level IP Anonymity:**  
    The bridge prevents the upstream server from learning which specific transactions the user is receiving. However, the upstream server still observes the IP address requesting public interval batches unless the operator routes traffic through Tor or a VPN.
-3. **Windowed Cache vs. Consensus Node:**  
+4. **Windowed Cache vs. Consensus Node:**  
    PRB does not validate Equihash proof-of-work or execute full archival consensus checks. Users requiring full consensus validation or archival exploration must run a full node like Zebra.
 
 ---
@@ -152,22 +154,22 @@ The privacy audit script [`scripts/verify_retrieval_privacy.sh`](../scripts/veri
 To independently reproduce all measurements and verify the raw logs:
 
 ```bash
-# 1. Run complete workspace test suite (30 integration & unit tests)
+# 1. Run live released wallet receipt & database parity verification (Zingo CLI 0.1.1)
+python3 scripts/verify_released_wallet_receipt.py
+
+# 2. Verify bit-for-bit parity between released wallet database exports
+diff -u artifacts/released_wallet_exports/upstream_zingo_notes.json artifacts/released_wallet_exports/prb_zingo_notes.json
+diff -u artifacts/released_wallet_exports/upstream_zingo_messages.json artifacts/released_wallet_exports/prb_zingo_messages.json
+
+# 3. Run complete workspace test suite (27 integration & unit tests)
 cargo test --workspace
 
-# 2. Run official wallet receipt demonstration & paired state parity test
+# 4. Run synthetic protocol test harness
 cargo test --test wallet_receipt_demonstration -- --nocapture
 
-# 3. Verify bit-for-bit parity between paired wallet state exports
-diff -u artifacts/wallet_state_upstream_lightwalletd.json artifacts/wallet_state_local_prb.json
-diff -u docs/fixtures/wallet_state_upstream_lightwalletd.sql docs/fixtures/wallet_state_local_prb.sql
-
-# 4. Run retrieval privacy audit and verify zero selective upstream leakage
+# 5. Run retrieval privacy audit and verify zero selective upstream leakage
 ./scripts/verify_retrieval_privacy.sh
 
-# 5. Run live running daemon performance & network traffic measurement (50-block windows)
+# 6. Run live running daemon performance & network traffic measurement (100-block windows)
 python3 scripts/measure_running_daemon.py
-
-# 6. Run benchmark tool over 50 blocks with DB+WAL storage breakdown
-./scripts/benchmark_operating_advantage.sh 50 config/bridge.default.toml
 ```

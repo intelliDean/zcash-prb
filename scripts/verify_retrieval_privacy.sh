@@ -28,14 +28,15 @@ fi
 TOTAL_UPSTREAM_CALLS=$(wc -l < "${UPSTREAM_TRACE}")
 GET_TX_CALLS=$(grep -c '"method":"GetTransaction"' "${UPSTREAM_TRACE}" || true)
 UNSYNCED_LEAKS=$(grep -c "99999999" "${UPSTREAM_TRACE}" || true)
+FORWARDED_SELECTIVE_CALLS=$(grep -c -E '"method":"(GetAddressUtxos|GetTaddressTxids|GetTaddressTransactions)"' "${UPSTREAM_TRACE}" || true)
 
 echo ""
 echo "======================================================================"
 echo " EMPIRICAL AUDIT SUMMARY FROM RAW RPC TRACE:"
 echo " - Total Upstream RPC Calls (Ingestion): ${TOTAL_UPSTREAM_CALLS}"
 echo " - Upstream Transactions Fetched:        ${GET_TX_CALLS} (Known public batch)"
-echo " - Client-Triggered Upstream Forwarding: 0 calls (STRICT ZERO-FALLBACK)"
-echo " - Selective Queries Leaked to Upstream: ${UNSYNCED_LEAKS} (Zero leakage)"
+echo " - Client-Triggered Upstream Forwarding: ${FORWARDED_SELECTIVE_CALLS} calls (measured from raw trace)"
+echo " - Selective Queries Leaked to Upstream: ${UNSYNCED_LEAKS} (measured from raw trace)"
 echo "======================================================================"
 echo "Raw upstream trace preserved at: ${UPSTREAM_TRACE}"
 

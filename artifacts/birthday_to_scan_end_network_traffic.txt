@@ -19,7 +19,7 @@ Process Level I/O (/proc/io):
   - write_bytes: 3366912
 Measured Serving Upstream Calls: 5
 Serving Calls by Method:       {'GetBlock': 5}
-Client Selective Leakage:      0 calls (0 forwarded; 100% of client queries served from verified SQLite)
+Client Selective Leakage:      0 calls (measured from raw trace: 0 forwarded single-tx queries, 0 address queries; 100% of client queries served from verified SQLite)
 Raw Trace Retained:            /mnt/data/Projects/zcash_private_bridge/artifacts/raw_upstream_trace_older_historical_nu5.jsonl
 Probe Verification Status:     All 12 RPCs PASSED (Exit Code: 0)
 
@@ -42,7 +42,12 @@ Process Level I/O (/proc/io):
   - write_bytes: 14680064
 Measured Serving Upstream Calls: 6
 Serving Calls by Method:       {'GetBlock': 6}
-Client Selective Leakage:      0 calls (0 forwarded; 100% of client queries served from verified SQLite)
+Client Selective Leakage:      0 calls (measured from raw trace: 0 forwarded single-tx queries, 0 address queries; 100% of client queries served from verified SQLite)
 Raw Trace Retained:            /mnt/data/Projects/zcash_private_bridge/artifacts/raw_upstream_trace_recent_mainnet_tip.jsonl
 Probe Verification Status:     All 12 RPCs PASSED (Exit Code: 0)
+
+[NOTE ON SAMPLE LIMITATION]
+The 100-block runs above represent short preliminary catch-up samples. They demonstrate
+windowed resource consumption during limited receiving intervals, but do not represent
+full multi-thousand-block synchronization benchmarks or long-term operational cost profiles.
 

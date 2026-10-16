@@ -295,8 +295,8 @@ async fn test_actual_wallet_receipt_and_paired_state_exports() {
     );
     log("================================================================================");
 
-    // Save session recording
-    let recording_path = root.join("artifacts/real_wallet_receipt_recording.txt");
+    // Save session recording for synthetic test harness
+    let recording_path = root.join("artifacts/synthetic_wallet_demonstration_recording.txt");
     let mut recording_file = File::create(&recording_path).unwrap();
     for line in &session_log {
         writeln!(recording_file, "{line}").unwrap();

@@ -364,12 +364,13 @@ cargo test --test wallet_receipt_demonstration -- --nocapture
 
 ### Empirical Measured Resource Profile (Live Running Daemon):
 *All figures below are directly reconciled with [`artifacts/recent_vs_older_coverage.json`](artifacts/recent_vs_older_coverage.json), [`artifacts/daemon_storage_breakdown.txt`](artifacts/daemon_storage_breakdown.txt), [`artifacts/birthday_to_scan_end_network_traffic.txt`](artifacts/birthday_to_scan_end_network_traffic.txt), and raw trace logs.*
-* **Process Memory (RSS):** **21.05 MB – 22.01 MB peak RSS** (empirically measured on Linux x86_64 during live 100-block synchronization, verification, and gRPC serving).
-* **Sync & Cryptographic Verification Speed:** **62.64 s** (NU5: 100 blocks, 422 txs) to **134.78 s** (NU6: 100 blocks, 834 txs) over live mainnet.
-* **Local Storage Footprint (DB + WAL + SHM):** **1.93 MB** (NU5, 100 blocks) to **4.41 MB** (NU6, 100 blocks) total disk storage including full transaction payloads.
-* **Network Traffic (Ingress):** **2.39 MB across 524 RPCs** (NU5 birthday restoration) to **5.86 MB across 936 RPCs** (NU6 tip receiving interval).
-* **Client Serving Phase Upstream Overhead:** **5 background polling calls** (older interval) and **6 background polling calls** (recent interval) by daemon scheduler; **0 client-specific queries leaked** (`GetTransaction` = 0, `GetAddressUtxos` = 0). Lookups average **23.08 ms – 27.33 ms** over loopback gRPC.
+* **Process Memory (RSS):** **18.84 MB** (NU5, 100 blocks) to **24.69 MB** (NU6, 100 blocks) peak RSS (empirically measured on Linux x86_64 during live 100-block synchronization, verification, and gRPC serving).
+* **Sync & Cryptographic Verification Speed:** **35.02 s** (NU5: 100 blocks, 448 txs) to **64.06 s** (NU6: 100 blocks, 881 txs) over live mainnet.
+* **Local Storage Footprint (DB + WAL + SHM):** **3.14 MB** (NU5, 100 blocks) to **14.26 MB** (NU6, 100 blocks) total disk storage including full transaction payloads.
+* **Network Traffic (Ingress):** **2.23 MB across 554 RPCs** (NU5 birthday restoration, 2,337,015 bytes) to **5.89 MB across 988 RPCs** (NU6 tip receiving interval, 6,173,049 bytes).
+* **Client Serving Phase Upstream Overhead:** **5 background polling calls** (older interval) and **6 background polling calls** (recent interval) by daemon scheduler; **0 client-specific queries leaked** (`GetTransaction` = 0, `GetAddressUtxos` = 0). Serving latency averages **74.75 ms – 81.25 ms** over loopback gRPC.
 * **Offline Rescan Capability:** Fully cached intervals serve subsequent wallet scans with **0 upstream network requests**.
+* **Preliminary Nature of Sample Coverage:** These 100-block runs remain short preliminary samples demonstrating windowed resource metrics; they are not generalized claims of full long-running mainnet operational requirements.
 
 ### Comparison Against Documented Full Node Baseline:
 * **Zebra + lightwalletd Baseline (Documented Specs):** Running a full archival validator requires downloading and validating the entire Zcash blockchain history from Genesis (~200 GB NVMe storage, 4–8 GB RAM minimum specification per Zcash Foundation documentation).
