@@ -46,7 +46,7 @@ async fn test_actual_wallet_receipt_and_paired_state_exports() {
     };
 
     log("================================================================================");
-    log("  ZCASH OFFICIAL WALLET RECEIPT & PAIRED WALLET-STATE PARITY DEMONSTRATION      ");
+    log("  SYNTHETIC PROTOCOL TEST HARNESS & PAIRED MOCK STATE EXPORT DEMONSTRATION      ");
     log("================================================================================");
 
     // 1. Setup mock upstream server representing a standard remote lightwalletd instance
@@ -399,7 +399,7 @@ where
     }
 
     WalletStateDump {
-        account_name: "Audited-Watch-Only".to_string(),
+        account_name: "Synthetic-Protocol-Test-Vector".to_string(),
         viewing_key: viewing_key.to_string(),
         birthday_height: start_height,
         synced_height: end_height,
@@ -419,13 +419,13 @@ fn save_snapshot_to_sql(snapshot: &WalletStateDump, path: &str) {
     let mut f = File::create(path).unwrap();
     writeln!(
         f,
-        "-- Paired Wallet State Export: {}",
+        "-- Synthetic Protocol Mock State Export (Test Harness Parity): {}",
         snapshot.account_name
     )
     .unwrap();
     writeln!(
         f,
-        "-- Exported for ZCG Grant Evaluation Parity Verification"
+        "-- Exported for ZCG Grant Evaluation Protocol Conformance Testing"
     )
     .unwrap();
     writeln!(f, "PRAGMA foreign_keys=OFF;").unwrap();

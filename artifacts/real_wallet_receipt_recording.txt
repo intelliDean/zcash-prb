@@ -1,13 +1,13 @@
 ================================================================================
-  ZCASH OFFICIAL WALLET RECEIPT & PAIRED WALLET-STATE PARITY DEMONSTRATION      
+  SYNTHETIC PROTOCOL TEST HARNESS & PAIRED MOCK STATE EXPORT DEMONSTRATION      
 ================================================================================
-[SETUP] Upstream server active at http://127.0.0.1:44325
+[SETUP] Upstream server active at http://127.0.0.1:41327
 
 >>> RUN 1: Wallet Sync Directly Against Standard Upstream lightwalletd
 [WALLET] Importing Public Watch-Only Viewing Key:
          zxviews1qqqqqqqqqqqqqqxsj37ykqalw23h4dz0wgnk688nlhxha0e7wv6gklj4p46jqxrx36f5gtjlalal79h8y9eq9hrnqeeflll7skh4dqauufjzu0htt5u8rh8gulk7eczt39gyzlu9hftkjxmc83zmrgn5ytd3dy7uadnmzqgx89vgfzgrywuafyeuqgwm3x70we7lyxthktlsdquysvs6fh62lvsh0stukadh0940kw0s7053eyjxqld9d756yr3gx5ymez37lxt2zuscwhlr7
 [WALLET] Setting Account Birthday Height: 2500000
-  [gRPC] Connected to http://127.0.0.1:44325 (Chain: , Upgrade: )
+  [gRPC] Connected to http://127.0.0.1:41327 (Chain: , Upgrade: )
   [NOTE DISCOVERED] Height: 2500000 | Pool: Sapling | Value: 0.25000000 ZEC
                     TxID: 8b6ceacbb27d4cb54bccb62f6632da385189361f895fc8b924ab143052b0b48b
   [MEMO DECRYPTED]  Memo: "Grant Evaluation Parity Receipt - 2026-Q4"
@@ -18,10 +18,10 @@
 [AUDIT] Did upstream observe selective GetTransaction for Sapling TxID? true
 
 >>> RUN 2: Wallet Sync Against Local Private Receive Bridge
-[WALLET] Connecting wallet to Local PRB Endpoint: http://127.0.0.1:43309
+[WALLET] Connecting wallet to Local PRB Endpoint: http://127.0.0.1:35971
 [WALLET] Importing Public Watch-Only Viewing Key:
          zxviews1qqqqqqqqqqqqqqxsj37ykqalw23h4dz0wgnk688nlhxha0e7wv6gklj4p46jqxrx36f5gtjlalal79h8y9eq9hrnqeeflll7skh4dqauufjzu0htt5u8rh8gulk7eczt39gyzlu9hftkjxmc83zmrgn5ytd3dy7uadnmzqgx89vgfzgrywuafyeuqgwm3x70we7lyxthktlsdquysvs6fh62lvsh0stukadh0940kw0s7053eyjxqld9d756yr3gx5ymez37lxt2zuscwhlr7
-  [gRPC] Connected to http://127.0.0.1:43309 (Chain: main, Upgrade: NU5)
+  [gRPC] Connected to http://127.0.0.1:35971 (Chain: main, Upgrade: NU5)
   [NOTE DISCOVERED] Height: 2500000 | Pool: Sapling | Value: 0.25000000 ZEC
                     TxID: 8b6ceacbb27d4cb54bccb62f6632da385189361f895fc8b924ab143052b0b48b
   [MEMO DECRYPTED]  Memo: "Grant Evaluation Parity Receipt - 2026-Q4"

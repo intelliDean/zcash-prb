@@ -1,0 +1,19 @@
+{
+  "value_transfers": [
+    {
+      "txid": "b9e7da7538ff7b864a25978165b2eb9612a541121e667600dbacbef7d5c3e4dc",
+      "datetime": 1296904602,
+      "status": "confirmed",
+      "blockheight": 226,
+      "transaction_fee": 10000,
+      "zec_price": null,
+      "kind": "received",
+      "value": 50000000,
+      "recipient_address": null,
+      "pool_received": "Orchard",
+      "memos": [
+        "ZCG Grant Evaluation - Actual Wallet Receipt Parity"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "orchard_notes": {
+    "note_summaries": [
+      {
+        "value": 50000000,
+        "status": "confirmed at block height 226",
+        "spend_status": "unspent",
+        "memo": "ZCG Grant Evaluation - Actual Wallet Receipt Parity",
+        "time": 1296904602,
+        "txid": "b9e7da7538ff7b864a25978165b2eb9612a541121e667600dbacbef7d5c3e4dc",
+        "output_index": 1,
+        "account_id": 0,
+        "scope": "external"
+      }
+    ]
+  },
+  "sapling_notes": {
+    "note_summaries": []
+  }
+}

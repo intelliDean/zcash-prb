@@ -127,12 +127,13 @@ pub fn query_tree_state(
         .optional()
         .map_err(|e| BridgeError::Storage(e.to_string()))?;
 
-    match bytes_opt {
-        Some(b) => TreeState::decode(b.as_slice())
+    if let Some(b) = bytes_opt {
+        return TreeState::decode(b.as_slice())
             .map(Some)
-            .map_err(|e| BridgeError::Storage(format!("TreeState decode error: {e}"))),
-        None => Ok(None),
+            .map_err(|e| BridgeError::Storage(format!("TreeState decode error: {e}")));
     }
+
+    Ok(None)
 }
 
 pub fn query_subtree_roots(

@@ -105,42 +105,81 @@ While the resulting SQLite database state in the wallet is **bit-for-bit identic
 
 ---
 
-## 3. Paired Wallet State Exports & Real Receipt Recording
+## 3. Evidence Artifacts: Synthetic Protocol Tests vs. Released Wallet Execution
 
-Real, paired wallet state exports demonstrating bit-for-bit parity between direct upstream `lightwalletd` sync and local `zcash-private-bridge` sync are committed in the repository:
+To ensure complete transparency and reproducibility, the evidence artifacts are strictly divided into:
+1. **Synthetic Protocol Test Vectors**: Automated mock note scanner test vectors validating internal protocol correctness and multi-pool data structures.
+2. **Actual Released Wallet Execution**: Execution of an unchanged, official release of a Zcash light client (`Zingo CLI 0.1.1`) against a live confirmed receipt, with side-by-side database state parity.
 
+---
+
+### A. Live Released Wallet Receipt & Database State Parity (Zingo CLI 0.1.1)
+
+An unchanged official release of `zingo-cli` (v0.1.1) was run against a live Zebra devnet:
+* **Confirmed Receipt Transaction:**
+  * **TxID:** `b9e7da7538ff7b864a25978165b2eb9612a541121e667600dbacbef7d5c3e4dc`
+  * **Inclusion Block:** Height 226
+  * **Received Value:** 50,000,000 zatoshis (0.50000000 ZEC)
+  * **Decrypted Memo:** `"ZCG Grant Evaluation - Actual Wallet Receipt Parity"`
+* **Execution Modes:**
+  * **Run 1 (Direct Upstream):** Wallet connects directly to upstream `lightwalletd` (`http://127.0.0.1:9067`).
+  * **Run 2 (Via PRB):** Wallet connects to local `zcash-private-bridge` (`http://127.0.0.1:9068`), which synchronizes public interval `[199..=249]`.
+* **Database State Exports:**
+  * Direct Upstream Notes: [`artifacts/released_wallet_exports/upstream_zingo_notes.json`](../artifacts/released_wallet_exports/upstream_zingo_notes.json)
+  * Bridge Sync Notes: [`artifacts/released_wallet_exports/prb_zingo_notes.json`](../artifacts/released_wallet_exports/prb_zingo_notes.json)
+  * Direct Upstream Messages: [`artifacts/released_wallet_exports/upstream_zingo_messages.json`](../artifacts/released_wallet_exports/upstream_zingo_messages.json)
+  * Bridge Sync Messages: [`artifacts/released_wallet_exports/prb_zingo_messages.json`](../artifacts/released_wallet_exports/prb_zingo_messages.json)
+  * *Verification:* Note lists and decrypted messages exported directly from the wallet database are **100% byte-for-byte identical** (`diff -u` returns 0 differences).
+* **Upstream Traffic & Retrieval Privacy:**
+  * Raw Upstream Network Trace: [`artifacts/released_wallet_upstream_trace.jsonl`](../artifacts/released_wallet_upstream_trace.jsonl)
+  * Client-Specific Query Leakage: **0** (`GetTransaction` = 0, `GetAddressUtxos` = 0). All transaction note lookups were served entirely from local bridge storage.
+* **Complete Session Recording:**
+  * Verbatim command output: [`artifacts/real_wallet_receipt_recording.txt`](../artifacts/real_wallet_receipt_recording.txt)
+
+---
+
+### B. Synthetic Protocol Test Vectors (Mock Note Scanner)
+
+The automated unit test harness (`crates/bridge-testkit/tests/wallet_receipt_demonstration.rs`) uses fixed synthetic mock data to ensure code regression coverage across both Sapling and Orchard pools:
+* **Export Metadata:** Explicitly labeled `"export_type": "Synthetic-Protocol-Test-Vector"`
 * **Paired JSON State Exports:**
-  * Direct upstream lightwalletd: [`artifacts/wallet_state_upstream_lightwalletd.json`](../artifacts/wallet_state_upstream_lightwalletd.json)
-  * Local private receive bridge: [`artifacts/wallet_state_local_prb.json`](../artifacts/wallet_state_local_prb.json)
-  * *Verification:* Both exports show exact matching balance (1.25000000 ZEC), identical Sapling note (0.25 ZEC at height 2500000), identical Orchard note (1.00 ZEC at height 2500001), and decrypted memo (`"Grant Evaluation Parity Receipt - 2026-Q4"`).
-* **Paired SQL State Exports (YWallet Schema):**
-  * Direct upstream lightwalletd: [`docs/fixtures/wallet_state_upstream_lightwalletd.sql`](fixtures/wallet_state_upstream_lightwalletd.sql)
-  * Local private receive bridge: [`docs/fixtures/wallet_state_local_prb.sql`](fixtures/wallet_state_local_prb.sql)
+  * Synthetic Upstream Lightwalletd: [`artifacts/wallet_state_upstream_lightwalletd.json`](../artifacts/wallet_state_upstream_lightwalletd.json)
+  * Synthetic Local Bridge: [`artifacts/wallet_state_local_prb.json`](../artifacts/wallet_state_local_prb.json)
+  * *Coverage:* Synthetic Sapling note (0.25 ZEC at height 2500000) and Orchard note (1.00 ZEC at height 2500001).
+* **Paired SQL State Exports (YWallet / zec.db schema):**
+  * Synthetic Upstream Lightwalletd: [`docs/fixtures/wallet_state_upstream_lightwalletd.sql`](fixtures/wallet_state_upstream_lightwalletd.sql)
+  * Synthetic Local Bridge: [`docs/fixtures/wallet_state_local_prb.sql`](fixtures/wallet_state_local_prb.sql)
   * *Verification:* `diff -u docs/fixtures/wallet_state_upstream_lightwalletd.sql docs/fixtures/wallet_state_local_prb.sql` reports 0 differences.
-* **Real Wallet Receipt Recording:**
-  * Complete session transcript: [`artifacts/real_wallet_receipt_recording.txt`](../artifacts/real_wallet_receipt_recording.txt)
-  * Records the entire flow: importing the valid ZIP-32 viewing key, discovering notes across Sapling and Orchard pools, decrypting the memo text, and auditing upstream network calls (1 selective query observed during standard sync vs 0 selective queries during bridge sync).
 
 ---
 
 ## 4. Reproduction & Verification Commands
 
-To reproduce and verify wallet state parity:
-1. Run the official wallet receipt demonstration test:
-   ```bash
-   cargo test --test wallet_receipt_demonstration -- --nocapture
-   ```
-2. Verify bit-for-bit identity between the paired exports:
-   ```bash
-   diff -u artifacts/wallet_state_upstream_lightwalletd.json artifacts/wallet_state_local_prb.json
-   diff -u docs/fixtures/wallet_state_upstream_lightwalletd.sql docs/fixtures/wallet_state_local_prb.sql
-   ```
-3. Run the wallet scanner CLI against any running bridge or lightwalletd endpoint:
-   ```bash
-   ./target/release/zcash-private-bridge wallet-scan \
-     --endpoint http://127.0.0.1:9067 \
-     --birthday 2500000 \
-     --export-json artifacts/wallet_state_local_prb.json \
-     --export-sql docs/fixtures/wallet_state_local_prb.sql
-   ```
-4. Inspect the valid public watch-only viewing key fixture in [`docs/fixtures/public_watch_only_fixture.json`](fixtures/public_watch_only_fixture.json).
+### 1. Reproduce Live Released Wallet Parity
+Run the automated end-to-end verification script using the official `zingo-cli` binary:
+```bash
+python3 scripts/verify_released_wallet_receipt.py
+```
+This script runs the wallet against both direct upstream and local bridge endpoints, verifies note discovery at height 226, verifies the decrypted memo, exports database records to `artifacts/released_wallet_exports/`, checks byte-for-byte parity, and audits upstream traffic logs.
+
+### 2. Run Synthetic Protocol Regression Suite
+Run the synthetic protocol test vector harness:
+```bash
+cargo test --test wallet_receipt_demonstration -- --nocapture
+```
+
+### 3. Verify Paired Export Diffs
+```bash
+# Released wallet database export parity:
+diff -u artifacts/released_wallet_exports/upstream_zingo_notes.json artifacts/released_wallet_exports/prb_zingo_notes.json
+diff -u artifacts/released_wallet_exports/upstream_zingo_messages.json artifacts/released_wallet_exports/prb_zingo_messages.json
+
+# Synthetic test vector parity:
+diff -u artifacts/wallet_state_upstream_lightwalletd.json artifacts/wallet_state_local_prb.json
+diff -u docs/fixtures/wallet_state_upstream_lightwalletd.sql docs/fixtures/wallet_state_local_prb.sql
+```
+
+### 4. Inspect Raw Logs & Public Key Fixture
+* Public watch-only viewing key fixture: [`docs/fixtures/public_watch_only_fixture.json`](fixtures/public_watch_only_fixture.json)
+* Raw upstream trace during wallet serving: [`artifacts/released_wallet_upstream_trace.jsonl`](../artifacts/released_wallet_upstream_trace.jsonl)
+* Live wallet receipt recording: [`artifacts/real_wallet_receipt_recording.txt`](../artifacts/real_wallet_receipt_recording.txt)

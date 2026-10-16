@@ -1,0 +1,16 @@
+Launching save task...
+[
+    confirmed_orchard_balance: 50_000_000
+    unconfirmed_orchard_balance: 0
+    total_orchard_balance: 50_000_000
+
+    confirmed_sapling_balance: 0
+    unconfirmed_sapling_balance: 0
+    total_sapling_balance: 0
+
+    confirmed_transparent_balance: 0
+    unconfirmed_transparent_balance: 0
+    total_transparent_balance: 0
+]
+Save task shutdown successfully.
+Zingo CLI quit successfully.

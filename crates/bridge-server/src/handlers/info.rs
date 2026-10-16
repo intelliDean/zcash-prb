@@ -13,6 +13,11 @@ pub struct ConsensusBranchInfo {
 
 pub fn get_consensus_info(network_name: &str, height: u64) -> ConsensusBranchInfo {
     match network_name {
+        "regtest" => ConsensusBranchInfo {
+            branch_id: "4dec4df0",
+            upgrade_name: "NU5",
+            activation_height: 1,
+        },
         "testnet" => {
             if height >= 2975000 {
                 ConsensusBranchInfo {
@@ -151,12 +156,12 @@ pub async fn get_lightd_info(
         taddr_support: true,
         chain_name: match network_name {
             "mainnet" => "main".to_string(),
-            "testnet" => "test".to_string(),
-            "regtest" => "regtest".to_string(),
+            "testnet" | "regtest" => "test".to_string(),
             other => other.to_string(),
         },
         sapling_activation_height: match network_name {
             "testnet" => 280000,
+            "regtest" => 1,
             _ => 419200,
         },
         consensus_branch_id: consensus_info.branch_id.to_string(),

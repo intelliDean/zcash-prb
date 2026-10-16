@@ -8,5 +8,8 @@
 private_bridge.txt
 __pycache__/
 *.pyc
+demo
 zcash_private_bridge_demo.mp4
 /scratch/
+wallets/
+fixtures/

@@ -1,13 +1,13 @@
-{"rpc":"GetLightdInfo","arg":"","expect":"Dynamic NU5 consensus branch c2d6d0b4","outcome":"chain=main branch=c2d6d0b4 upgrade=NU5 height=2500004","pass":true,"elapsed_ms":1}
-{"rpc":"GetLatestBlock","arg":"","expect":"height=2500004","outcome":"height=2500004","pass":true,"elapsed_ms":1}
-{"rpc":"GetBlockRange","arg":"2500000..=2500004","expect":"5 blocks","outcome":"blocks=5","pass":true,"elapsed_ms":47}
-{"rpc":"GetTreeState","arg":"height=2500000","expect":"OK","outcome":"height=2500000 sapling_len=0","pass":true,"elapsed_ms":1}
-{"rpc":"GetTreeState","arg":"height=2500004","expect":"OK","outcome":"height=2500004 sapling_len=0","pass":true,"elapsed_ms":1}
+{"rpc":"GetLightdInfo","arg":"","expect":"Dynamic NU5 consensus branch c2d6d0b4","outcome":"chain=main branch=c2d6d0b4 upgrade=NU5 height=2500004","pass":true,"elapsed_ms":3}
+{"rpc":"GetLatestBlock","arg":"","expect":"height=2500004","outcome":"height=2500004","pass":true,"elapsed_ms":2}
+{"rpc":"GetBlockRange","arg":"2500000..=2500004","expect":"5 blocks","outcome":"blocks=5","pass":true,"elapsed_ms":46}
+{"rpc":"GetTreeState","arg":"height=2500000","expect":"OK","outcome":"height=2500000 sapling_len=0","pass":true,"elapsed_ms":2}
+{"rpc":"GetTreeState","arg":"height=2500004","expect":"OK","outcome":"height=2500004 sapling_len=0","pass":true,"elapsed_ms":2}
 {"rpc":"GetSubtreeRoots","arg":"pool=0","expect":"OK","outcome":"roots stream OK","pass":true,"elapsed_ms":1}
 {"rpc":"GetSubtreeRoots","arg":"pool=1","expect":"OK","outcome":"roots stream OK","pass":true,"elapsed_ms":1}
 {"rpc":"GetTransaction","arg":"txid=8b6ceacbb27d4cb54bccb62f6632da385189361f895fc8b924ab143052b0b48b","expect":"OK","outcome":"data_len=48","pass":true,"elapsed_ms":1}
 {"rpc":"GetTransaction","arg":"txid=6c41a5f6a7fff02dafa92c437862b80a9d77eaee6bbbce70f353c621585b8e7f","expect":"OK","outcome":"data_len=80","pass":true,"elapsed_ms":1}
 {"rpc":"GetTransaction","arg":"txid=9999..99 (un-synced)","expect":"NotFound (zero-fallback)","outcome":"Some(NotFound)","pass":true,"elapsed_ms":1}
 {"rpc":"GetBlock","arg":"height=above_tip","expect":"NotFound","outcome":"Some(NotFound)","pass":true,"elapsed_ms":1}
-{"rpc":"GetTreeState","arg":"height=below_coverage","expect":"NotFound","outcome":"Some(NotFound)","pass":true,"elapsed_ms":1}
+{"rpc":"GetTreeState","arg":"height=below_coverage","expect":"NotFound","outcome":"Some(NotFound)","pass":true,"elapsed_ms":2}
 {"rpc":"SendTransaction","arg":"dummy raw bytes","expect":"PermissionDenied","outcome":"Some(PermissionDenied)","pass":true,"elapsed_ms":1}

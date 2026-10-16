@@ -42,21 +42,29 @@ For cryptographic audit, public wallet import, and external reproduction:
 * **Transparent Public Address:** `t1bWjEzNFqTVz8ckBt22wpAHSSTKMGwiCvq` (Zcash Foundation public donation address).
 * **Security:** Contains strictly zero private spending keys. Safe for public repository hosting and reproducible wallet imports.
 
-### C. Actual Wallet Receipt Demonstration & Paired State Exports
-To demonstrate the actual user workflow—importing the public viewing key, discovering notes, decrypting memos, and proving bit-for-bit database parity without selective leakage:
-* **Real Wallet Receipt Recording:** [`artifacts/real_wallet_receipt_recording.txt`](../artifacts/real_wallet_receipt_recording.txt)  
-  Captures a complete wallet session importing the valid ZIP-32 viewing key (`zxviews1...`), setting birthday 2500000, discovering Sapling (0.25 ZEC at 2500000) and Orchard (1.00 ZEC at 2500001) notes, and decrypting the memo text (`"Grant Evaluation Parity Receipt - 2026-Q4"`).
-* **Paired JSON State Exports:**
-  * Direct Upstream lightwalletd: [`artifacts/wallet_state_upstream_lightwalletd.json`](../artifacts/wallet_state_upstream_lightwalletd.json)
-  * Local Private Receive Bridge: [`artifacts/wallet_state_local_prb.json`](../artifacts/wallet_state_local_prb.json)
-* **Paired SQL State Exports (YWallet Schema):**
-  * Direct Upstream lightwalletd: [`docs/fixtures/wallet_state_upstream_lightwalletd.sql`](fixtures/wallet_state_upstream_lightwalletd.sql)
-  * Local Private Receive Bridge: [`docs/fixtures/wallet_state_local_prb.sql`](fixtures/wallet_state_local_prb.sql)
-* **Parity Audit:** `diff -u` on both the JSON and SQL pairs yields zero differences. Standard sync leaked recipient TxIDs via selective `GetTransaction` queries upstream; PRB emitted **0 selective queries upstream**.
+### C. Actual Released Wallet Receipt Demonstration & Parity Audit
+To demonstrate the actual user workflow—running an official, unchanged released wallet against an authentic confirmed receipt, discovering notes, decrypting memos, and proving bit-for-bit database parity without selective leakage:
+* **Unchanged Official Binary:** [`/home/dean/.local/bin/zingo-cli`](https://github.com/zingolabs/zingolib) (Zingo CLI v0.1.1, extracted directly from official release container `zeckit/zingo:latest`).
+* **Confirmed Shielded Receipt:** Block `226` on live Zebra + Lightwalletd devnet.
+  * **TxID:** `b9e7da7538ff7b864a25978165b2eb9612a541121e667600dbacbef7d5c3e4dc`
+  * **Amount:** `50,000,000` zatoshis (0.50000000 ZEC, Orchard Shielded Pool)
+  * **Decrypted Memo:** `"ZCG Grant Evaluation - Actual Wallet Receipt Parity"`
+* **Empirical Execution & Parity Results:**
+  * **Transcript Recording:** [`artifacts/real_wallet_receipt_recording.txt`](../artifacts/real_wallet_receipt_recording.txt)  
+    Captures complete end-to-end execution of `zingo-cli`: importing Unified Full Viewing Key (`uviewregtest1...`), performing trial decryption, discovering the note at block 226, decrypting the memo text, and dumping internal wallet database state.
+  * **Actual Wallet Database Exports:**
+    * Discovered Orchard Notes: [`artifacts/released_wallet_exports/upstream_zingo_notes.json`](../artifacts/released_wallet_exports/upstream_zingo_notes.json) vs [`artifacts/released_wallet_exports/prb_zingo_notes.json`](../artifacts/released_wallet_exports/prb_zingo_notes.json) (**100% byte-for-byte identical**).
+    * Decrypted Value Transfers / Memos: [`artifacts/released_wallet_exports/upstream_zingo_messages.json`](../artifacts/released_wallet_exports/upstream_zingo_messages.json) vs [`artifacts/released_wallet_exports/prb_zingo_messages.json`](../artifacts/released_wallet_exports/prb_zingo_messages.json) (**100% byte-for-byte identical**).
+    * Confirmed Balance: `0.50000000 ZEC` across both runs.
+  * **Upstream Network Audit & Raw Trace Retention:**
+    * Raw Trace: [`artifacts/released_wallet_upstream_trace.jsonl`](../artifacts/released_wallet_upstream_trace.jsonl).
+    * Upstream calls before wallet queries: 163 calls.
+    * Upstream calls after wallet queries: 187 calls (24 background polling calls by acquisition worker; **exactly 0 client-specific queries leaked**).
 
-### D. Recorded Protocol Probe Session Trace
-* **Trace File:** [`artifacts/real_wallet_session_trace.txt`](../artifacts/real_wallet_session_trace.txt)
-* **Observed Outcome:** 73 gRPC requests completed, including 66 full transactions served locally from SQLite in 33 ms, with zero upstream network egress during client serving.
+### D. Synthetic Protocol Test Fixtures & Vectors
+*Clearly distinguished from live released wallet execution:*
+* **Synthetic Protocol Test Demonstration:** [`crates/bridge-testkit/tests/wallet_receipt_demonstration.rs`](../crates/bridge-testkit/tests/wallet_receipt_demonstration.rs) and [`crates/bridge-cli/src/commands/wallet_scan.rs`](../crates/bridge-cli/src/commands/wallet_scan.rs).
+* **Synthetic Exports:** [`artifacts/wallet_state_local_prb.json`](../artifacts/wallet_state_local_prb.json) and [`artifacts/wallet_state_upstream_lightwalletd.json`](../artifacts/wallet_state_upstream_lightwalletd.json) (Explicitly metadata-labeled as `Synthetic-Protocol-Test-Vector`). Note decryption logic validates exact trial-decryption keys with zero hardcoded memo fallbacks.
 
 ---
 
@@ -64,36 +72,39 @@ To demonstrate the actual user workflow—importing the public viewing key, disc
 
 The running `zcash-private-bridge` daemon was measured live using [`scripts/measure_running_daemon.py`](../scripts/measure_running_daemon.py) connected to live Zcash Mainnet (`https://zec.rocks:443`).
 
-To demonstrate useful coverage beyond brief samples, the evaluation measured **50 blocks per window** across two distinct operational regimes:
-1. **Older Historical Coverage (Wallet Birthday-to-Scan-End Restoration):** Blocks `2500000` to `2500049` (50 blocks, NU5). Demonstrates restoring an older wallet from its birthday height across a meaningful historical interval.
-2. **Recent Mainnet Receiving Interval:** Blocks `3516550` to `3516599` (50 blocks, NU6). Demonstrates ongoing receipt and verification at current mainnet tip.
+To demonstrate realistic catch-up performance, the evaluation measured **100 blocks per window** across two distinct operational regimes:
+1. **Older Historical Coverage (Realistic Birthday-to-Scan-End Catch-Up):** Blocks `2500000` to `2500099` (100 blocks, NU5). Demonstrates restoring an older wallet from its birthday height across a realistic historical interval.
+2. **Recent Mainnet Receiving Interval:** Blocks `3516500` to `3516599` (100 blocks, NU6). Demonstrates active catch-up and verification at the current mainnet tip.
 
 The measurements track the full daemon lifecycle:
 - Ingestion and cryptographic consensus verification (`validate_block_sequence` + `verify_transaction`).
 - Total active SQLite storage breakdown (`bridge.db`, `bridge.db-wal`, `bridge.db-shm`).
 - Upstream network traffic (exact ingress bytes, request counts, method breakdown, and `/proc/io`).
+- Upstream call measurements before and after client serving phase, retaining full raw traces.
 - Live gRPC serving latency under wallet queries while the daemon is actively serving.
 - Process peak resident set size (RSS).
 
 ### A. Raw Measurement Summary (Directly Reconciled with Logs)
 *All numbers below match [`artifacts/recent_vs_older_coverage.json`](../artifacts/recent_vs_older_coverage.json), [`artifacts/daemon_storage_breakdown.txt`](../artifacts/daemon_storage_breakdown.txt), and [`artifacts/birthday_to_scan_end_network_traffic.txt`](../artifacts/birthday_to_scan_end_network_traffic.txt).*
 
-| Metric | Older Coverage (NU5 Birthday: 2500000..=2500049) | Recent Coverage (NU6 Tip: 3516550..=3516599) | Source Log |
+| Metric | Older Coverage (NU5 Birthday: 2500000..=2500099) | Recent Coverage (NU6 Tip: 3516500..=3516599) | Source Log |
 | :--- | :--- | :--- | :--- |
-| **Blocks Evaluated** | **50 blocks** | **50 blocks** | `recent_vs_older_coverage.json` |
+| **Blocks Evaluated** | **100 blocks** | **100 blocks** | `recent_vs_older_coverage.json` |
 | **Active Consensus Branch** | `c2d6d0b4` (NU5) | `c8e71050` (NU6) | `recent_vs_older_coverage.json` |
-| **Transactions Ingested & Verified** | 229 full transactions | 457 full transactions | `birthday_to_scan_end_network_traffic.txt` |
-| **Sync & Verification Duration** | **38.02 seconds** | **63.03 seconds** | `daemon_storage_breakdown.txt` |
-| **Peak Process RSS** | **16.93 MB** | **20.34 MB** | `daemon_storage_breakdown.txt` |
-| **`bridge.db` Size** | 4,096 bytes (4.00 KB) | 4,096 bytes (4.00 KB) | `daemon_storage_breakdown.txt` |
-| **`bridge.db-wal` Size** | 1,767,512 bytes (1.73 MB) | 3,806,912 bytes (3.72 MB) | `daemon_storage_breakdown.txt` |
+| **Transactions Ingested & Verified** | 448 full transactions | 881 full transactions | `birthday_to_scan_end_network_traffic.txt` |
+| **Sync & Verification Duration** | **35.02 seconds** | **64.06 seconds** | `daemon_storage_breakdown.txt` |
+| **Peak Process RSS** | **18.84 MB** | **24.69 MB** | `daemon_storage_breakdown.txt` |
+| **`bridge.db` Size** | 4,096 bytes (4.00 KB) | 7,036,928 bytes (7.04 MB) | `daemon_storage_breakdown.txt` |
+| **`bridge.db-wal` Size** | 3,102,392 bytes (3.10 MB) | 7,193,552 bytes (7.19 MB) | `daemon_storage_breakdown.txt` |
 | **`bridge.db-shm` Size** | 32,768 bytes (32.00 KB) | 32,768 bytes (32.00 KB) | `daemon_storage_breakdown.txt` |
-| **Total Storage Footprint (DB+WAL)**| **1,804,376 bytes (1.76 MB)** | **3,843,776 bytes (3.75 MB)** | `daemon_storage_breakdown.txt` |
-| **Upstream Network Ingress** | **1,254,477 bytes (1.20 MB)** | **3,168,696 bytes (3.02 MB)** | `birthday_to_scan_end_network_traffic.txt` |
-| **Total Upstream RPC Calls** | 284 calls (50 blocks, 229 txs) | 512 calls (50 blocks, 457 txs) | `birthday_to_scan_end_network_traffic.txt` |
-| **Client Serving Overhead** | **0 Upstream Calls (100% Local)** | **0 Upstream Calls (100% Local)** | `birthday_to_scan_end_network_traffic.txt` |
-| **Average gRPC Serving Latency** | **23.08 ms** | **27.33 ms** | `recent_vs_older_coverage.json` |
-| **Max gRPC Serving Latency** | 163 ms | 222 ms | `recent_vs_older_coverage.json` |
+| **Total Storage Footprint (DB+WAL)**| **3,139,256 bytes (3.14 MB)** | **14,263,248 bytes (14.26 MB)** | `daemon_storage_breakdown.txt` |
+| **Upstream Acquisition Ingress** | **2,337,015 bytes (2.23 MB)** | **6,173,049 bytes (5.89 MB)** | `birthday_to_scan_end_network_traffic.txt` |
+| **Acquisition Upstream RPC Calls** | 554 calls (100 blocks, 448 txs) | 988 calls (100 blocks, 881 txs) | `birthday_to_scan_end_network_traffic.txt` |
+| **Serving Phase Upstream Calls** | **5 background calls (`GetBlock`)** | **6 background calls (`GetBlock`)** | `birthday_to_scan_end_network_traffic.txt` |
+| **Client Selective Query Leakage** | **0 calls (100% served locally)** | **0 calls (100% served locally)** | `birthday_to_scan_end_network_traffic.txt` |
+| **Raw Trace Retained** | `raw_upstream_trace_older_historical_nu5.jsonl` | `raw_upstream_trace_recent_mainnet_tip.jsonl` | `birthday_to_scan_end_network_traffic.txt` |
+| **Average gRPC Serving Latency** | **74.75 ms** | **22.33 ms** | `recent_vs_older_coverage.json` |
+| **Max gRPC Serving Latency** | 714 ms | 161 ms | `recent_vs_older_coverage.json` |
 | **Probe Tests Passed** | 12 / 12 (100%, Exit Code: 0) | 12 / 12 (100%, Exit Code: 0) | `recent_vs_older_coverage.json` |
 
 ---

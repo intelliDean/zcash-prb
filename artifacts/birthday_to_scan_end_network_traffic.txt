@@ -1,42 +1,48 @@
-=== ZCASH PRIVATE RECEIVE BRIDGE: USEFUL COVERAGE & NETWORK TRAFFIC AUDIT ===
+=== ZCASH PRIVATE RECEIVE BRIDGE: REALISTIC CATCH-UP & NETWORK TRAFFIC AUDIT ===
 
---- Coverage Window: older_historical_nu5 (Blocks 2500000..=2500049, 50 blocks) ---
-Upstream Ingress Bytes:        1254477 bytes (1.196 MB)
-Total Upstream gRPC Calls:     284
-Upstream Calls by Method:
-  - GetBlock: 50 calls
-  - GetLatestBlock: 1 calls
+--- Coverage Window: older_historical_nu5 (Blocks 2500000..=2500099, 100 blocks) ---
+Acquisition Ingress Bytes:     2337015 bytes (2.229 MB)
+Acquisition Upstream RPC Calls:554
+Acquisition Calls by Method:
+  - GetBlock: 100 calls
+  - GetLatestBlock: 2 calls
   - GetSubtreeRoots: 2 calls
-  - GetTransaction: 229 calls
+  - GetTransaction: 448 calls
   - GetTreeState: 2 calls
 Process Level I/O (/proc/io):
   - cancelled_write_bytes: 0
-  - rchar: 20015
-  - read_bytes: 0
-  - syscr: 45
-  - syscw: 2009
-  - wchar: 1878101
-  - write_bytes: 1949696
-Client Serving Overhead:       0 Upstream Calls (100% served from local SQLite storage)
+  - rchar: 114175
+  - read_bytes: 163840
+  - syscr: 68
+  - syscw: 3682
+  - wchar: 3312447
+  - write_bytes: 3366912
+Measured Serving Upstream Calls: 5
+Serving Calls by Method:       {'GetBlock': 5}
+Client Selective Leakage:      0 calls (0 forwarded; 100% of client queries served from verified SQLite)
+Raw Trace Retained:            /mnt/data/Projects/zcash_private_bridge/artifacts/raw_upstream_trace_older_historical_nu5.jsonl
 Probe Verification Status:     All 12 RPCs PASSED (Exit Code: 0)
 
---- Coverage Window: recent_mainnet_tip (Blocks 3516550..=3516599, 50 blocks) ---
-Upstream Ingress Bytes:        3168696 bytes (3.022 MB)
-Total Upstream gRPC Calls:     512
-Upstream Calls by Method:
-  - GetBlock: 50 calls
-  - GetLatestBlock: 1 calls
+--- Coverage Window: recent_mainnet_tip (Blocks 3516500..=3516599, 100 blocks) ---
+Acquisition Ingress Bytes:     6173049 bytes (5.887 MB)
+Acquisition Upstream RPC Calls:988
+Acquisition Calls by Method:
+  - GetBlock: 101 calls
+  - GetLatestBlock: 2 calls
   - GetSubtreeRoots: 2 calls
-  - GetTransaction: 457 calls
+  - GetTransaction: 881 calls
   - GetTreeState: 2 calls
 Process Level I/O (/proc/io):
   - cancelled_write_bytes: 77824
-  - rchar: 122412
+  - rchar: 7265789
   - read_bytes: 0
-  - syscr: 69
-  - syscw: 10477
-  - wchar: 17799976
-  - write_bytes: 4182016
-Client Serving Overhead:       0 Upstream Calls (100% served from local SQLite storage)
+  - syscr: 1814
+  - syscw: 26211
+  - wchar: 50694571
+  - write_bytes: 14680064
+Measured Serving Upstream Calls: 6
+Serving Calls by Method:       {'GetBlock': 6}
+Client Selective Leakage:      0 calls (0 forwarded; 100% of client queries served from verified SQLite)
+Raw Trace Retained:            /mnt/data/Projects/zcash_private_bridge/artifacts/raw_upstream_trace_recent_mainnet_tip.jsonl
 Probe Verification Status:     All 12 RPCs PASSED (Exit Code: 0)
 

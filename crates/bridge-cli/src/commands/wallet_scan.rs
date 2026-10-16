@@ -57,9 +57,9 @@ pub async fn run_wallet_scan(config: &BridgeConfig, args: WalletScanArgs) -> Res
     });
 
     println!("==========================================================================");
-    println!("    ZCASH LIGHT WALLET SCANNER & NOTE DECRYPTION HARNESS                  ");
+    println!("    ZCASH SYNTHETIC PROTOCOL TEST HARNESS (MOCK NOTE SCANNER)             ");
     println!("==========================================================================");
-    println!("[WALLET] Initializing local wallet storage...");
+    println!("[SYNTHETIC-HARNESS] Initializing test storage...");
 
     let db_path = args
         .export_db
@@ -369,11 +369,10 @@ fn init_wallet_sqlite_schema(path: &Path) -> Result<Connection> {
 }
 
 fn decrypt_memo_payload(tx_bytes: &[u8]) -> String {
-    // In confirmed-receive test vector transactions, the memo payload is preserved in decrypted form
-    // or embedded at the standard Sapling/Orchard memo ciphertext offset.
+    // In synthetic test vectors, search for UTF-8 plaintext payload if present
     const EXPECTED_MEMO: &str = "Grant Evaluation Parity Receipt - 2026-Q4";
     if let Ok(s) = std::str::from_utf8(tx_bytes)
-        && s.contains("Grant Evaluation Parity Receipt")
+        && s.contains(EXPECTED_MEMO)
     {
         return EXPECTED_MEMO.to_string();
     }
@@ -383,7 +382,8 @@ fn decrypt_memo_payload(tx_bytes: &[u8]) -> String {
             return EXPECTED_MEMO.to_string();
         }
     }
-    EXPECTED_MEMO.to_string()
+    // Fail closed: do not return hardcoded memo if no matching plaintext exists
+    String::new()
 }
 
 fn dump_wallet_sqlite_to_sql(conn: &Connection, path: &Path) -> Result<()> {

@@ -1,0 +1,18 @@
+Launching save task...
+
+{
+    txid: b9e7da7538ff7b864a25978165b2eb9612a541121e667600dbacbef7d5c3e4dc
+    datetime: 2011-02-05 11:16:42 UTC
+    status: confirmed
+    blockheight: 226
+    transaction fee: 10000
+    zec price: not available
+    kind: received
+    value: 50000000
+    recipient_address: not available
+    pool_received: Orchard
+    memos: 
+	memo 1: ZCG Grant Evaluation - Actual Wallet Receipt Parity
+}
+Save task shutdown successfully.
+Zingo CLI quit successfully.

@@ -159,6 +159,15 @@ impl AcquisitionWorker {
             tree_states.push(start_tree_state);
         }
 
+        // Fetch start + 1 tree state if within interval to support wallets with birthday at start + 1
+        if interval.start.0 < interval.end.0 {
+            let next_h = BlockHeight(interval.start.0 + 1);
+            if self.storage.get_tree_state(next_h).await?.is_none() {
+                let next_tree_state = self.upstream.get_tree_state(next_h).await?;
+                tree_states.push(next_tree_state);
+            }
+        }
+
         // 5. Fetch subtree roots completing within or up to this interval
         let subtree_roots = self.fetch_subtree_roots(interval.end).await?;
 

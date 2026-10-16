@@ -334,8 +334,10 @@ The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and interna
    Verifies exact consensus branch ID and network upgrade mapping across Mainnet and Testnet heights (Sprout, Overwinter, Sapling, Blossom, Heartwood, Canopy, NU5, NU6) with zero hardcoded branch ID leaks.
 11. **Wallet Probe Sequence & Offline Rescan Parity ([`tests/wallet_probe_verification.rs`](crates/bridge-testkit/tests/wallet_probe_verification.rs)):**
     Exercises the full light wallet RPC sequence (`GetLightdInfo`, `GetLatestBlock`, `GetBlockRange`, `GetTreeState`, `GetSubtreeRoots`, `GetTransaction`), validates expected failure codes (`NOT_FOUND`, `PERMISSION_DENIED`), drops upstream connectivity, restarts from local SQLite storage, and confirms 100% offline rescan parity.
-12. **Official Wallet Receipt & Paired State Parity ([`tests/wallet_receipt_demonstration.rs`](crates/bridge-testkit/tests/wallet_receipt_demonstration.rs)):**
-    Runs paired wallet synchronization against standard upstream `lightwalletd` versus local `zcash-private-bridge`. Imports the valid ZIP-32 viewing key fixture (`zxviews1...`), discovers Sapling (0.25 ZEC) and Orchard (1.00 ZEC) notes, decrypts the memo text (`"Grant Evaluation Parity Receipt - 2026-Q4"`), and verifies bit-for-bit equivalence between paired JSON and SQL exports ([`artifacts/wallet_state_local_prb.json`](artifacts/wallet_state_local_prb.json) and [`docs/fixtures/wallet_state_local_prb.sql`](docs/fixtures/wallet_state_local_prb.sql)) with zero selective query leakage to upstream.
+12. **Synthetic Protocol Conformance & Mock Note Scanner ([`tests/wallet_receipt_demonstration.rs`](crates/bridge-testkit/tests/wallet_receipt_demonstration.rs)):**
+    Exercises note scanning against mock upstream data vectors. Imports the public test viewing key fixture (`zxviews1...`), discovers synthetic Sapling (0.25 ZEC) and Orchard (1.00 ZEC) notes, and verifies matching JSON and SQL exports ([`artifacts/wallet_state_local_prb.json`](artifacts/wallet_state_local_prb.json) and [`docs/fixtures/wallet_state_local_prb.sql`](docs/fixtures/wallet_state_local_prb.sql)) with zero selective query leakage.
+13. **Actual Released Wallet Receipt & Parity Demonstration ([`scripts/verify_released_wallet_receipt.py`](scripts/verify_released_wallet_receipt.py)):**
+    Runs an unchanged official released wallet binary (`Zingo CLI 0.1.1`) against a live confirmed transaction (`b9e7da...`, 0.5 ZEC, memo: `"ZCG Grant Evaluation - Actual Wallet Receipt Parity"`) both directly against standard upstream lightwalletd and through `zcash-private-bridge`. Discovers the note, decrypts the authentic memo, and verifies bit-for-bit parity between actual database exports ([`artifacts/released_wallet_exports/`](artifacts/released_wallet_exports/)) while logging raw upstream traces ([`artifacts/released_wallet_upstream_trace.jsonl`](artifacts/released_wallet_upstream_trace.jsonl)).
 
 ---
 
@@ -344,26 +346,29 @@ The testkit crate ([`crates/bridge-testkit`](crates/bridge-testkit)) and interna
 Measure sync times, verification performance, DB/WAL storage, network traffic, and gRPC serving latency using the built-in benchmark tool and automated measurement scripts:
 
 ```bash
-# 1. Run live daemon performance & network traffic measurement (50-block windows)
+# 1. Run live daemon performance & network traffic measurement (100-block windows)
 python3 scripts/measure_running_daemon.py
 
-# 2. Run empirical resource measurement script (preserves raw logs to artifacts/)
+# 2. Run live released wallet receipt & database parity verification
+python3 scripts/verify_released_wallet_receipt.py
+
+# 3. Run empirical resource measurement script (preserves raw logs to artifacts/)
 ./scripts/benchmark_operating_advantage.sh 50 config/bridge.default.toml
 
-# 3. Verify retrieval privacy and zero selective fallback with raw upstream RPC logging
+# 4. Verify retrieval privacy and zero selective fallback with raw upstream RPC logging
 ./scripts/verify_retrieval_privacy.sh
 
-# 4. Run official wallet receipt demonstration test
+# 5. Run synthetic protocol test harness
 cargo test --test wallet_receipt_demonstration -- --nocapture
 ```
 
 ### Empirical Measured Resource Profile (Live Running Daemon):
-*All figures below are directly reconciled with [`artifacts/recent_vs_older_coverage.json`](artifacts/recent_vs_older_coverage.json), [`artifacts/daemon_storage_breakdown.txt`](artifacts/daemon_storage_breakdown.txt), and [`artifacts/birthday_to_scan_end_network_traffic.txt`](artifacts/birthday_to_scan_end_network_traffic.txt).*
-* **Process Memory (RSS):** **16.93 MB – 20.34 MB peak RSS** (empirically measured on Linux x86_64 during live 50-block synchronization, verification, and gRPC serving).
-* **Sync & Cryptographic Verification Speed:** **38.02 s** (NU5: 50 blocks, 229 txs) to **63.03 s** (NU6: 50 blocks, 457 txs) over live mainnet.
-* **Local Storage Footprint (DB + WAL + SHM):** **1.76 MB** (NU5, 50 blocks) to **3.75 MB** (NU6, 50 blocks) total disk storage including full transaction payloads.
-* **Network Traffic (Ingress):** **1.20 MB across 284 RPCs** (NU5 birthday restoration) to **3.02 MB across 512 RPCs** (NU6 tip receiving interval).
-* **Client Serving Overhead:** **0 Upstream Calls (100% Local)**. Lookups average **23.08 ms – 27.33 ms** over loopback gRPC.
+*All figures below are directly reconciled with [`artifacts/recent_vs_older_coverage.json`](artifacts/recent_vs_older_coverage.json), [`artifacts/daemon_storage_breakdown.txt`](artifacts/daemon_storage_breakdown.txt), [`artifacts/birthday_to_scan_end_network_traffic.txt`](artifacts/birthday_to_scan_end_network_traffic.txt), and raw trace logs.*
+* **Process Memory (RSS):** **21.05 MB – 22.01 MB peak RSS** (empirically measured on Linux x86_64 during live 100-block synchronization, verification, and gRPC serving).
+* **Sync & Cryptographic Verification Speed:** **62.64 s** (NU5: 100 blocks, 422 txs) to **134.78 s** (NU6: 100 blocks, 834 txs) over live mainnet.
+* **Local Storage Footprint (DB + WAL + SHM):** **1.93 MB** (NU5, 100 blocks) to **4.41 MB** (NU6, 100 blocks) total disk storage including full transaction payloads.
+* **Network Traffic (Ingress):** **2.39 MB across 524 RPCs** (NU5 birthday restoration) to **5.86 MB across 936 RPCs** (NU6 tip receiving interval).
+* **Client Serving Phase Upstream Overhead:** **5 background polling calls** (older interval) and **6 background polling calls** (recent interval) by daemon scheduler; **0 client-specific queries leaked** (`GetTransaction` = 0, `GetAddressUtxos` = 0). Lookups average **23.08 ms – 27.33 ms** over loopback gRPC.
 * **Offline Rescan Capability:** Fully cached intervals serve subsequent wallet scans with **0 upstream network requests**.
 
 ### Comparison Against Documented Full Node Baseline:
@@ -374,6 +379,8 @@ cargo test --test wallet_receipt_demonstration -- --nocapture
 For raw experiment logs, watch-only test fixtures, and offline rescan traces, see:
 * [Grant Evaluation & Operating Advantage Report](docs/GRANT_EVALUATION.md)
 * [Wallet State Comparison (lightwalletd vs PRB)](docs/WALLET_STATE_COMPARISON.md)
+* [Released Wallet Database Exports](artifacts/released_wallet_exports/)
+* [Released Wallet Upstream Trace Log](artifacts/released_wallet_upstream_trace.jsonl)
 * [Public Watch-Only Fixture (ZIP-32 Derivation)](docs/fixtures/public_watch_only_fixture.json)
 * [Synthetic Protocol Test Fixture](docs/fixtures/safe_watch_only_fixture.json)
 * [Raw Daemon Storage Breakdown](artifacts/daemon_storage_breakdown.txt)
